@@ -73,12 +73,12 @@ button {
   font-size: 24px;
   font-weight: 800;
   line-height: 1;
-  text-indent: 1px;
 }
 
-.brand-mark::first-letter {
-  display: inline-block;
-  transform: translateY(1px);
+.brand-mark span {
+  display: block;
+  line-height: 1;
+  transform: translate(0, 1px);
 }
 
 .brand h1,
@@ -471,13 +471,13 @@ button {
 
 .level-button {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
   align-items: center;
   width: 100%;
   border: 0;
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px;
   background: transparent;
   color: var(--ink);
   text-align: left;
@@ -490,8 +490,8 @@ button {
 
 .level-button > span {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   place-items: center;
   border-radius: 50%;
   background: #fffdf8;
@@ -506,18 +506,33 @@ button {
 }
 
 .level-button em {
-  grid-column: 2;
+  justify-self: end;
+  white-space: nowrap;
 }
 
 .level-button small,
 .level-button em {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-style: normal;
+}
+
+.level-button strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .level-card {
   padding: 24px;
+}
+
+.level-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
 }
 
 .level-card-head h3,
@@ -535,11 +550,38 @@ button {
   line-height: 1.7;
 }
 
+.compact-reset {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 1px solid #d7cbb9;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: #fffdf8;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.level-notes {
+  margin-top: 12px;
+  border: 1px solid #eadfce;
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.7);
+}
+
+.level-notes summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  color: var(--accent);
+  font-weight: 900;
+}
+
 .level-content-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 16px;
+  margin: 0;
+  padding: 0 14px 14px;
 }
 
 .level-content-grid section,
@@ -548,6 +590,10 @@ button {
   border-radius: 8px;
   padding: 16px;
   background: rgba(255, 253, 248, 0.72);
+}
+
+.level-notes .level-content-grid section {
+  background: #fffdf8;
 }
 
 .level-content-grid h4,
@@ -1118,6 +1164,28 @@ button {
   line-height: 1.7;
 }
 
+.import-image {
+  margin: 0 0 14px;
+  border: 1px solid #eadfce;
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+.import-image img {
+  display: block;
+  width: min(100%, 360px);
+  max-height: 260px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.import-image figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .score-tip {
   margin-top: 14px;
 }
@@ -1389,21 +1457,26 @@ button {
   }
 
   .level-progress {
-    flex: 0 0 150px;
+    flex: 0 0 132px;
     min-height: 82px;
   }
 
   .level-button {
-    flex: 0 0 230px;
+    flex: 0 0 168px;
     scroll-snap-align: start;
   }
 
   .level-button em {
-    grid-column: 2;
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .level-card {
     padding: 18px;
+  }
+
+  .level-card-head {
+    display: grid;
   }
 
   .level-card-head h3 {

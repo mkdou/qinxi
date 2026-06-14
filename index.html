@@ -17,7 +17,7 @@
     <div class="app-shell">
       <aside class="sidebar" aria-label="主导航">
         <div class="brand">
-          <div class="brand-mark">琴</div>
+          <div class="brand-mark"><span>琴</span></div>
           <div>
             <h1>琴习</h1>
             <p>零基础钢琴学习打卡</p>
@@ -107,7 +107,7 @@
             </div>
             <div class="learning-jumps">
               <a href="#learning-drills">互动训练</a>
-              <a href="#learning-reference">乐理速查</a>
+              <a href="#learning-reference">学习路线</a>
               <a href="#learning-sources">靠谱来源</a>
             </div>
           </div>
@@ -117,8 +117,8 @@
           </div>
           <div class="resource-section" id="learning-reference">
             <div class="section-heading">
-              <h3>乐理速查</h3>
-              <p>把容易混的规则放在这里，配合上面的互动训练反复巩固。</p>
+              <h3>钢琴知识路线</h3>
+              <p>不是背几条口诀，而是按“识谱、键盘、节奏、和声、练习方法”逐层深入。</p>
             </div>
             <div class="practice-list" id="practiceLessons"></div>
           </div>
@@ -192,6 +192,10 @@
             <label class="full">
               文案 / 字幕 / 你的笔记（可选）
               <textarea id="sourceText" rows="7" placeholder="只有链接也可以先保存；有文字时会立刻整理成知识卡。"></textarea>
+            </label>
+            <label class="full">
+              截图 / 图片素材（可选）
+              <input type="file" id="sourceImage" accept="image/*" />
             </label>
             <button class="primary-action" type="submit">保存或整理</button>
             <p class="form-message" id="importMessage" role="status"></p>

@@ -256,48 +256,52 @@ function getAllTheoryLevels() {
   return [...theoryLevels, ...buildImportedTheoryLevels()];
 }
 
+function getLevelShortTitle(level) {
+  return level.shortTitle || levelShortTitles[level.id] || level.title.replace(/^识别|怎么|和/g, "").slice(0, 14);
+}
+
 const practiceLessons = [
   {
-    level: "五线谱",
-    title: "高音谱表线间规律",
-    body: "高音谱号中，第 1 线到第 5 线依次是 E、G、B、D、F；第 1 间到第 4 间依次是 F、A、C、E。",
+    level: "识谱",
+    title: "五线谱不是背图，是坐标系统",
+    body: "先用高音谱号第 2 线 G、低音谱号第 4 线 F、中央 C 三个锚点定位，再按线间一步步推音名。",
     visual: staffVisual("高音谱表：线 E G B D F", ["E4", "G4", "B4", "D5", "F5"]),
-    points: ["第 2 线是 G，也就是 sol", "下加一线是中央 C", "线与线、间与间都按隔一个音循环"]
-  },
-  {
-    level: "五线谱",
-    title: "低音谱表线间规律",
-    body: "低音谱号中，第 1 线到第 5 线依次是 G、B、D、F、A；第 1 间到第 4 间依次是 A、C、E、G。",
-    visual: staffVisual("低音谱表：线 G B D F A", ["G2", "B2", "D3", "F3", "A3"]),
-    points: ["低音谱号第 4 线是 F", "上加一线附近是中央 C", "左手识谱先从低音谱表开始定位"]
-  },
-  {
-    level: "简谱",
-    title: "数字和音区点",
-    body: "C 大调里 1-7 对应 C-D-E-F-G-A-B。数字上方点表示高八度，下方点表示低八度。",
-    visual: noteMapVisual(),
-    points: ["无点常表示中音区", "上方一个点表示高一组", "下方一个点表示低一组"]
+    points: ["先找锚点，再往上/下数", "线和间交替走，相邻位置差一个音级", "加线只是五线谱往外延伸，不是新规则"]
   },
   {
     level: "键盘",
-    title: "中央 C 与两组键盘",
-    body: "本应用练习器的 15 个白键从中央 C 开始，到高两组的 C 结束。",
-    visual: keyboardVisual(["C4", "D4", "E4", "F4", "G4", "A4", "B4"], "第一个 C 是中央 C"),
-    points: ["C4 是中央 C", "同名音隔 8 度重复", "同一个字母在不同八度声音高度不同"]
+    title: "音名、八度和真实按键",
+    body: "同样是 C，C4、C5、C6 的音高不同。识谱和弹琴必须把音名、八度、键盘位置绑在一起。",
+    visual: keyboardVisual(["C4", "D4", "E4", "F4", "G4", "A4", "B4"], "中央 C 开始建立键盘坐标"),
+    points: ["白键按 C-D-E-F-G-A-B 循环", "黑键按升号/降号命名", "八度决定声音高低，不只是字母不同"]
+  },
+  {
+    level: "简谱",
+    title: "简谱是相对音级，不是固定琴键",
+    body: "C 大调里 1=C，但换到 G 大调时 1=G。先用 C 大调入门，再理解调号为什么会改变 1 的位置。",
+    visual: noteMapVisual(),
+    points: ["1-7 是音阶级数", "上/下点表示高低八度", "换调以后 1 的实际键位会变"]
   },
   {
     level: "节奏",
-    title: "拍号和基本时值",
-    body: "4/4 拍里每小节 4 拍，四分音符通常 1 拍，二分音符 2 拍，全音符 4 拍。",
-    visual: rhythmVisual(["50", "54", "58", "62"], "一次只加一点点速度"),
-    points: ["先数拍再弹", "休止符也要数拍", "节奏稳定比速度更重要"]
+    title: "节奏是时间坐标",
+    body: "拍号告诉你每小节怎么数，时值告诉你每个音持续多久。先稳定，再速度。",
+    visual: rhythmVisual(["1", "2", "3", "4"], "先数稳每一拍"),
+    points: ["4/4 拍每小节 4 拍", "休止符也要数拍", "节拍器不是催你快，是检查你稳不稳"]
   },
   {
-    level: "和弦",
-    title: "三和弦 1-3-5",
-    body: "三和弦常由音阶第 1、3、5 级构成。C 大三和弦就是 C、E、G。",
+    level: "和声",
+    title: "从音阶走到和弦",
+    body: "旋律是横向的音，和弦是纵向的音。理解 1-3-5 后，很多流行伴奏会开始变清楚。",
     visual: chordVisual(),
-    points: ["先会认单音，再学和弦", "和弦可以同时弹，也可以分解弹", "很多流行伴奏围绕和弦进行"]
+    points: ["C 大调音阶先全用白键", "三和弦常取 1、3、5", "和弦进行决定歌曲的情绪走向"]
+  },
+  {
+    level: "练法",
+    title: "把知识变成手上的动作",
+    body: "真正会弹不是看懂，而是能慢速、稳定、重复地做出来。每次只解决一个小问题。",
+    visual: loopVisual(),
+    points: ["先分手，再合手", "错在哪里就循环哪里", "慢练时动作正确，比快弹一遍更有价值"]
   }
 ];
 
@@ -457,6 +461,18 @@ let appLearningStartedAt = Date.now();
 let appLearningSeconds = 0;
 let appLearningLastSavedMinute = 0;
 
+const levelShortTitles = {
+  notes: "Natural Notes",
+  "black-keys": "Black Keys",
+  "staff-note": "Staff Notes",
+  "staff-ledger": "Ledger Lines",
+  steps: "Half / Whole",
+  clefs: "Clefs",
+  rhythm: "Rhythm",
+  duration: "Durations",
+  chords: "Chords"
+};
+
 const els = {
   tabButtons: [...document.querySelectorAll("[data-tab]")],
   panels: [...document.querySelectorAll(".tab-panel")],
@@ -473,6 +489,7 @@ const els = {
   sourceUrl: document.querySelector("#sourceUrl"),
   sourceTitle: document.querySelector("#sourceTitle"),
   sourceText: document.querySelector("#sourceText"),
+  sourceImage: document.querySelector("#sourceImage"),
   importMessage: document.querySelector("#importMessage"),
   importResults: document.querySelector("#importResults"),
   checkinForm: document.querySelector("#checkinForm"),
@@ -841,14 +858,13 @@ function mergeQuestionStats(first, second) {
 }
 
 function filterStatsAfterReset(stats, resetAt) {
-  if (!resetAt) return stats || {};
-  const resetTime = timestampValue(resetAt);
   const nextStats = {};
   Object.entries(stats || {}).forEach(([levelId, stat]) => {
     const normalized = normalizeQuestionStat(stat);
     const byDevice = {};
+    const resetTime = timestampValue(typeof resetAt === "object" ? resetAt[levelId] : resetAt);
     Object.entries(normalized.byDevice || {}).forEach(([deviceId, deviceStat]) => {
-      if (timestampValue(deviceStat.lastPracticedAt) > resetTime) byDevice[deviceId] = deviceStat;
+      if (!resetTime || timestampValue(deviceStat.lastPracticedAt) > resetTime) byDevice[deviceId] = deviceStat;
     });
     const nextStat = normalizeQuestionStat({ byDevice });
     if (nextStat.attempts > 0) nextStats[levelId] = nextStat;
@@ -857,9 +873,13 @@ function filterStatsAfterReset(stats, resetAt) {
 }
 
 function filterProgressAfterReset(progress, stats, resetAt) {
-  if (!resetAt) return progress || {};
   const nextProgress = {};
   Object.entries(progress || {}).forEach(([levelId, completed]) => {
+    const resetTime = timestampValue(typeof resetAt === "object" ? resetAt[levelId] : resetAt);
+    if (!resetTime) {
+      if (completed) nextProgress[levelId] = true;
+      return;
+    }
     if (completed && stats?.[levelId]?.attempts) nextProgress[levelId] = true;
   });
   return nextProgress;
@@ -872,9 +892,22 @@ function mergeAppData(remoteData, localData) {
     timestampValue(local.sync?.learningResetAt) >= timestampValue(remote.sync?.learningResetAt)
       ? local.sync?.learningResetAt
       : remote.sync?.learningResetAt;
+  const levelResetAt = {};
+  new Set([...Object.keys(remote.sync?.levelResetAt || {}), ...Object.keys(local.sync?.levelResetAt || {})]).forEach(levelId => {
+    const remoteReset = remote.sync?.levelResetAt?.[levelId];
+    const localReset = local.sync?.levelResetAt?.[levelId];
+    levelResetAt[levelId] =
+      timestampValue(localReset) >= timestampValue(remoteReset) ? localReset || null : remoteReset || null;
+  });
+  const resetMap = { ...levelResetAt };
+  if (learningResetAt) {
+    new Set([...Object.keys(remote.questionStats || {}), ...Object.keys(local.questionStats || {})]).forEach(levelId => {
+      if (timestampValue(learningResetAt) > timestampValue(resetMap[levelId])) resetMap[levelId] = learningResetAt;
+    });
+  }
   const mergedStats = filterStatsAfterReset(
     mergeQuestionStats(remote.questionStats, local.questionStats),
-    learningResetAt
+    resetMap
   );
   return {
     ...local,
@@ -890,13 +923,14 @@ function mergeAppData(remoteData, localData) {
         ...local.lessonProgress
       },
       mergedStats,
-      learningResetAt
+      resetMap
     ),
     questionStats: mergedStats,
     imports: mergeImports(remote.imports, local.imports),
     sync: {
       ...local.sync,
       learningResetAt,
+      levelResetAt,
       updatedAt:
         timestampValue(local.sync?.updatedAt) >= timestampValue(remote.sync?.updatedAt)
           ? local.sync?.updatedAt
@@ -1576,6 +1610,7 @@ function renderTheoryLevels() {
   const allLevelIds = new Set(allLevels.map(level => level.id));
   const completed = Object.entries(progress).filter(([levelId, done]) => done && allLevelIds.has(levelId)).length;
   const activeLevel = allLevels.find(level => level.id === activeTheoryLevelId) || allLevels[0];
+  const activeStats = getPersistedLevelStats(activeLevel.id);
 
   els.theoryLevels.innerHTML = `
     <div class="level-progress">
@@ -1583,20 +1618,23 @@ function renderTheoryLevels() {
         <strong>${completed}/${allLevels.length}</strong>
         <span>已完成关卡</span>
       </div>
-      <button type="button" data-reset-learning>重置</button>
+      <button type="button" data-reset-learning>全清</button>
     </div>
     ${allLevels
       .map(
-        (level, index) => `
+        (level, index) => {
+          const stats = getPersistedLevelStats(level.id);
+          return `
           <button class="level-button ${level.id === activeLevel.id ? "active" : ""}" data-level-id="${level.id}">
             <span>${String(index + 1).padStart(2, "0")}</span>
             <div>
-              <strong>${level.title}</strong>
-              <small>${level.group}</small>
+              <strong>${getLevelShortTitle(level)}</strong>
+              <small>${stats.attempts ? `${Math.round((stats.correct / stats.attempts) * 100)}% · ${stats.correct}/${stats.attempts}` : level.group}</small>
             </div>
             <em>${progress[level.id] ? "已掌握" : "未完成"}</em>
           </button>
-        `
+        `;
+        }
       )
       .join("")}
   `;
@@ -1604,21 +1642,27 @@ function renderTheoryLevels() {
   els.theoryLevelDetail.innerHTML = `
     <article class="level-card">
       <div class="level-card-head">
-        <span class="level-pill">${activeLevel.group}</span>
-        <h3>${activeLevel.title}</h3>
-        <p>${activeLevel.summary}</p>
+        <div>
+          <span class="level-pill">${activeLevel.group}</span>
+          <h3>${activeLevel.title}</h3>
+          <p>${activeStats.attempts ? `当前统计：${getAccuracy(activeStats)}` : activeLevel.summary}</p>
+        </div>
+        <button class="ghost-action compact-reset" type="button" data-reset-level="${activeLevel.id}">重置本课</button>
       </div>
       ${activeLevel.drill ? "" : activeLevel.visual}
-      <div class="level-content-grid">
-        <section>
-          <h4>本关目录</h4>
-          <ol>${activeLevel.contents.map(item => `<li>${item}</li>`).join("")}</ol>
-        </section>
-        <section>
-          <h4>先记住</h4>
-          <ul>${activeLevel.points.map(point => `<li>${point}</li>`).join("")}</ul>
-        </section>
-      </div>
+      <details class="level-notes">
+        <summary>本关要点和目录</summary>
+        <div class="level-content-grid">
+          <section>
+            <h4>目录</h4>
+            <ol>${activeLevel.contents.map(item => `<li>${item}</li>`).join("")}</ol>
+          </section>
+          <section>
+            <h4>先记住</h4>
+            <ul>${activeLevel.points.map(point => `<li>${point}</li>`).join("")}</ul>
+          </section>
+        </div>
+      </details>
       ${
         activeLevel.drill
           ? renderDrill(activeLevel)
@@ -1686,6 +1730,34 @@ function resetLearningProgress() {
   });
   renderTheoryLevels();
   setSyncStatus("学习进度已重置，稍后会自动同步到云端。");
+}
+
+function resetLevelProgress(levelId) {
+  const level = getAllTheoryLevels().find(item => item.id === levelId);
+  if (!level) return;
+  const confirmed = window.confirm(`确认重置“${level.title}”的做题数量和成功率吗？`);
+  if (!confirmed) return;
+
+  const data = readAppData();
+  delete data.lessonProgress[levelId];
+  delete data.questionStats[levelId];
+  data.sync = {
+    ...(data.sync || {}),
+    levelResetAt: {
+      ...(data.sync?.levelResetAt || {}),
+      [levelId]: new Date().toISOString()
+    }
+  };
+  writeAppData(data);
+
+  if (levelId === "notes") drillState.keyboard = { note: null, status: "idle", correct: 0, attempts: 0 };
+  if (levelId === "black-keys") drillState.black = { note: null, naming: "sharp", status: "idle", correct: 0, attempts: 0 };
+  if (levelId === "staff-note") drillState.staff = { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 };
+  if (levelId === "staff-ledger") drillState.staffLedger = { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 };
+  if (drillState.choice[levelId]) delete drillState.choice[levelId];
+
+  renderTheoryLevels();
+  setSyncStatus(`已重置“${level.title}”，稍后会自动同步到云端。`);
 }
 
 function recordQuestionAttempt(levelId, isCorrect) {
@@ -2004,14 +2076,35 @@ function titleFromUrl(url) {
   }
 }
 
+function readImageAttachment(file) {
+  if (!file) return Promise.resolve(null);
+  const maxBytes = 700 * 1024;
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result || "");
+      resolve({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        dataUrl: file.size <= maxBytes ? dataUrl : "",
+        note: file.size <= maxBytes ? "已保存图片预览。" : "图片太大，已记录文件名；建议截图裁剪后再导入。"
+      });
+    };
+    reader.onerror = () => resolve({ name: file.name, type: file.type, size: file.size, dataUrl: "", note: "图片读取失败。" });
+    reader.readAsDataURL(file);
+  });
+}
+
 function buildImportedTheoryLevels() {
   return readImports()
     .filter(item => item.analysis?.training?.length)
     .slice(0, 8)
-    .map(item => ({
+    .map((item, index) => ({
       id: `import-${item.id || item.createdAt}`,
       group: "导入",
       title: item.title,
+      shortTitle: `导入 ${index + 1}`,
       summary: `来自导入素材：${item.analysis.type}。先用这些题把内容变成可练的知识点。`,
       contents: ["素材重点", "小测题", "回到原链接复习"],
       visual: noteMapVisual(),
@@ -2042,6 +2135,13 @@ function renderImports() {
           </div>
           <h3>${item.title}</h3>
           <a href="${item.url}" target="_blank" rel="noreferrer">打开原链接</a>
+          ${
+            item.image?.dataUrl
+              ? `<figure class="import-image"><img src="${item.image.dataUrl}" alt="${item.image.name || "导入图片"}" /><figcaption>${item.image.note}</figcaption></figure>`
+              : item.image?.name
+                ? `<div class="import-panel"><strong>图片素材</strong><p>${item.image.name}：${item.image.note}</p></div>`
+                : ""
+          }
           <div class="import-grid">
             <section>
               <h4>乐理知识点</h4>
@@ -2182,6 +2282,12 @@ function setupEvents() {
   });
 
   els.theoryLevelDetail.addEventListener("click", event => {
+    const resetLevelButton = event.target.closest("[data-reset-level]");
+    if (resetLevelButton) {
+      resetLevelProgress(resetLevelButton.dataset.resetLevel);
+      return;
+    }
+
     const choiceButton = event.target.closest("[data-choice-answer]");
     if (choiceButton) {
       answerChoiceDrill(choiceButton.dataset.choiceLevel, choiceButton.dataset.choiceAnswer);
@@ -2247,21 +2353,27 @@ function setupEvents() {
     }
   });
 
-  els.importForm.addEventListener("submit", event => {
+  els.importForm.addEventListener("submit", async event => {
     event.preventDefault();
     const text = els.sourceText.value.trim();
     const url = els.sourceUrl.value.trim();
     const title = els.sourceTitle.value.trim() || titleFromUrl(url);
     const createdAt = new Date().toISOString();
+    const image = await readImageAttachment(els.sourceImage?.files?.[0]);
     const item = {
       id: `import-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       url,
       title,
       text,
+      image,
       date: todayISO(),
       createdAt,
       updatedAt: createdAt,
-      analysis: analyzeImportedSource({ text, title, url })
+      analysis: analyzeImportedSource({
+        text: [text, image?.name ? `图片素材：${image.name}` : ""].filter(Boolean).join("\n"),
+        title,
+        url
+      })
     };
     const items = readImports();
     items.unshift(item);
