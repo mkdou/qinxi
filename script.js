@@ -6,6 +6,7 @@ const appDataVersion = 2;
 const supabaseUrl = "https://rwrqumnbgxcqonpvfxqj.supabase.co";
 const supabasePublishableKey = "sb_publishable_sStbbTzJvM_7ehaSUJBN9A_GJcG90Ee";
 const cloudDataTable = "qinxi_user_data";
+const pendingSyncEmailKey = "qinxi_pending_sync_email";
 
 let supabaseClient = null;
 let currentUser = null;
@@ -446,6 +447,9 @@ const els = {
   syncForm: document.querySelector("#syncForm"),
   syncEmail: document.querySelector("#syncEmail"),
   sendLoginLink: document.querySelector("#sendLoginLink"),
+  verifyForm: document.querySelector("#verifyForm"),
+  syncCode: document.querySelector("#syncCode"),
+  verifyLoginCode: document.querySelector("#verifyLoginCode"),
   syncTitle: document.querySelector("#syncTitle"),
   syncStatus: document.querySelector("#syncStatus"),
   syncNow: document.querySelector("#syncNow"),
@@ -622,6 +626,18 @@ function getAppUrl() {
   return `${window.location.origin}${window.location.pathname}`;
 }
 
+function getPendingSyncEmail() {
+  return localStorage.getItem(pendingSyncEmailKey) || "";
+}
+
+function setPendingSyncEmail(email) {
+  if (email) {
+    localStorage.setItem(pendingSyncEmailKey, email);
+    return;
+  }
+  localStorage.removeItem(pendingSyncEmailKey);
+}
+
 function withTimeout(promise, milliseconds, message) {
   let timeoutId;
   const timeout = new Promise((_, reject) => {
@@ -648,14 +664,18 @@ function updateSyncUI(message) {
     els.syncTitle.textContent = `已登录：${currentUser.email || "当前账号"}`;
     setSyncStatus(message || "云同步已开启。打卡、学习进度和做题记录会自动保存到云端。");
     els.syncForm.hidden = true;
+    els.verifyForm.hidden = true;
     els.syncNow.hidden = false;
     els.signOut.hidden = false;
     return;
   }
 
+  const pendingEmail = getPendingSyncEmail();
   els.syncTitle.textContent = "未登录";
-  setSyncStatus(message || "输入邮箱后会收到登录链接。电脑和手机用同一个邮箱登录即可同步。");
+  setSyncStatus(message || "输入邮箱后会收到 6 位验证码。电脑和手机用同一个邮箱登录即可同步。");
   els.syncForm.hidden = false;
+  els.verifyForm.hidden = !pendingEmail;
+  if (pendingEmail && !els.syncEmail.value) els.syncEmail.value = pendingEmail;
   els.syncNow.hidden = true;
   els.signOut.hidden = true;
 }
@@ -1801,7 +1821,7 @@ function setupEvents() {
     }
     if (!email) return;
 
-    setSyncStatus("正在发送登录链接，手机网络慢时可能需要半分钟左右...");
+    setSyncStatus("正在发送验证码，手机网络慢时可能需要半分钟左右...");
     els.sendLoginLink.disabled = true;
     els.sendLoginLink.textContent = "发送中...";
     let result;
@@ -1820,20 +1840,71 @@ function setupEvents() {
     } catch (error) {
       setSyncStatus(error.message);
       els.sendLoginLink.disabled = false;
-      els.sendLoginLink.textContent = "重新发送";
+      els.sendLoginLink.textContent = "重新发送验证码";
       return;
     }
 
     if (result.error) {
       setSyncStatus(`发送失败：${result.error.message}`);
       els.sendLoginLink.disabled = false;
-      els.sendLoginLink.textContent = "重新发送";
+      els.sendLoginLink.textContent = "重新发送验证码";
       return;
     }
 
-    setSyncStatus("登录链接已发送。打开邮件里的链接后，会自动回到琴习完成同步。");
+    setPendingSyncEmail(email);
+    els.verifyForm.hidden = false;
+    els.syncCode.focus();
+    setSyncStatus("验证码已发送。看邮箱里的 6 位数字，回到这里输入即可登录。");
     els.sendLoginLink.disabled = false;
-    els.sendLoginLink.textContent = "重新发送";
+    els.sendLoginLink.textContent = "重新发送验证码";
+  });
+
+  els.verifyForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const client = getSupabaseClient();
+    const email = getPendingSyncEmail() || els.syncEmail.value.trim();
+    const token = els.syncCode.value.trim();
+    if (!client || !email || !token) return;
+
+    setSyncStatus("正在验证验证码...");
+    els.verifyLoginCode.disabled = true;
+    els.verifyLoginCode.textContent = "验证中...";
+
+    let result;
+    try {
+      result = await withTimeout(
+        client.auth.verifyOtp({
+          email,
+          token,
+          type: "email"
+        }),
+        45000,
+        "验证超时。请检查网络后再试一次。"
+      );
+    } catch (error) {
+      setSyncStatus(error.message);
+      els.verifyLoginCode.disabled = false;
+      els.verifyLoginCode.textContent = "验证登录";
+      return;
+    }
+
+    if (result.error) {
+      setSyncStatus(`验证失败：${result.error.message}`);
+      els.verifyLoginCode.disabled = false;
+      els.verifyLoginCode.textContent = "验证登录";
+      return;
+    }
+
+    currentUser = result.data.user;
+    setPendingSyncEmail("");
+    els.syncCode.value = "";
+    els.verifyLoginCode.disabled = false;
+    els.verifyLoginCode.textContent = "验证登录";
+    updateSyncUI("登录成功，正在同步数据...");
+    loadCloudData().catch(error => {
+      console.error(error);
+      setSyncStatus("登录成功，但同步失败：请稍后点立即同步。");
+    });
   });
 
   els.signOut.addEventListener("click", async () => {
@@ -1841,6 +1912,7 @@ function setupEvents() {
     if (!client) return;
     await client.auth.signOut();
     currentUser = null;
+    setPendingSyncEmail("");
     updateSyncUI("已退出登录，本机数据仍保留。");
   });
 

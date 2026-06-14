@@ -63,7 +63,11 @@
             </div>
             <form class="sync-form" id="syncForm">
               <input type="email" id="syncEmail" placeholder="输入邮箱登录同步" autocomplete="email" required />
-              <button class="primary-action" type="submit" id="sendLoginLink">发送登录链接</button>
+              <button class="primary-action" type="submit" id="sendLoginLink">发送验证码</button>
+            </form>
+            <form class="sync-form sync-verify" id="verifyForm" hidden>
+              <input type="text" id="syncCode" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="输入邮件里的 6 位验证码" required />
+              <button class="primary-action" type="submit" id="verifyLoginCode">验证登录</button>
             </form>
             <div class="sync-actions">
               <button class="ghost-action" type="button" id="syncNow" hidden>立即同步</button>

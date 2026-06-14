@@ -263,6 +263,10 @@ button {
   display: none;
 }
 
+.sync-verify {
+  grid-column: 2 / 4;
+}
+
 .sync-form input {
   min-width: 0;
   border: 1px solid var(--line);
@@ -1325,6 +1329,10 @@ button {
   .sync-actions {
     grid-template-columns: 1fr;
     justify-content: stretch;
+  }
+
+  .sync-verify {
+    grid-column: auto;
   }
 
   .sync-form .primary-action,
