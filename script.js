@@ -621,6 +621,15 @@ function getAppUrl() {
   return `${window.location.origin}${window.location.pathname}`;
 }
 
+function withTimeout(promise, milliseconds, message) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
+}
+
 function updateSyncUI(message) {
   const client = getSupabaseClient();
   if (!els.syncTitle) return;
@@ -1785,19 +1794,33 @@ function setupEvents() {
     event.preventDefault();
     const client = getSupabaseClient();
     const email = els.syncEmail.value.trim();
-    if (!client || !email) return;
+    if (!client) {
+      setSyncStatus("同步组件没有加载成功，请检查网络后刷新。");
+      return;
+    }
+    if (!email) return;
 
     setSyncStatus("正在发送登录链接...");
-    const { error } = await client.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: getAppUrl()
-      }
-    });
+    let result;
+    try {
+      result = await withTimeout(
+        client.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: getAppUrl()
+          }
+        }),
+        12000,
+        "发送超时。请确认手机网络能访问 Supabase，或稍后再试。"
+      );
+    } catch (error) {
+      setSyncStatus(error.message);
+      return;
+    }
 
-    if (error) {
-      setSyncStatus(`发送失败：${error.message}`);
+    if (result.error) {
+      setSyncStatus(`发送失败：${result.error.message}`);
       return;
     }
 
@@ -1830,7 +1853,24 @@ function init() {
   initCloudSync();
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js").then(registration => {
+      if (registration.waiting) registration.waiting.postMessage("SKIP_WAITING");
+      registration.addEventListener("updatefound", () => {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener("statechange", () => {
+          if (worker.state === "installed" && navigator.serviceWorker.controller) {
+            worker.postMessage("SKIP_WAITING");
+          }
+        });
+      });
+    }).catch(() => {});
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (sessionStorage.getItem("qinxi_reloaded_for_update") === "1") return;
+      sessionStorage.setItem("qinxi_reloaded_for_update", "1");
+      window.location.reload();
+    });
   }
 }
 
