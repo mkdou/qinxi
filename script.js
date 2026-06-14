@@ -672,7 +672,7 @@ function updateSyncUI(message) {
 
   const pendingEmail = getPendingSyncEmail();
   els.syncTitle.textContent = "未登录";
-  setSyncStatus(message || "输入邮箱后会收到 6 位验证码。电脑和手机用同一个邮箱登录即可同步。");
+  setSyncStatus(message || "输入邮箱后会收到验证码。电脑和手机用同一个邮箱登录即可同步。");
   els.syncForm.hidden = false;
   els.verifyForm.hidden = !pendingEmail;
   if (pendingEmail && !els.syncEmail.value) els.syncEmail.value = pendingEmail;
@@ -1854,7 +1854,7 @@ function setupEvents() {
     setPendingSyncEmail(email);
     els.verifyForm.hidden = false;
     els.syncCode.focus();
-    setSyncStatus("验证码已发送。看邮箱里的 6 位数字，回到这里输入即可登录。");
+    setSyncStatus("验证码已发送。看邮箱里的数字验证码，回到这里输入即可登录。");
     els.sendLoginLink.disabled = false;
     els.sendLoginLink.textContent = "重新发送验证码";
   });
