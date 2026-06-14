@@ -55,6 +55,22 @@
             </article>
           </div>
 
+          <section class="sync-panel" aria-label="云同步">
+            <div>
+              <p class="eyebrow">云同步</p>
+              <h3 id="syncTitle">未登录</h3>
+              <p id="syncStatus">登录后，电脑和手机会同步打卡日志、学习进度和做题记录。</p>
+            </div>
+            <form class="sync-form" id="syncForm">
+              <input type="email" id="syncEmail" placeholder="输入邮箱登录同步" autocomplete="email" required />
+              <button class="primary-action" type="submit">发送登录链接</button>
+            </form>
+            <div class="sync-actions">
+              <button class="ghost-action" type="button" id="syncNow" hidden>立即同步</button>
+              <button class="ghost-action" type="button" id="signOut" hidden>退出登录</button>
+            </div>
+          </section>
+
           <div class="home-layout">
             <article class="focus-card">
               <div>
@@ -223,7 +239,7 @@
           </form>
           <div class="section-heading log-heading">
             <h3>打卡日志</h3>
-            <p>这里保存本机浏览器里的练习记录。</p>
+            <p>登录云同步后，电脑和手机会共用这些练习记录。</p>
           </div>
           <div class="record-summary">
             <article><span>打卡天数</span><strong id="recordDays">0</strong></article>
@@ -243,6 +259,7 @@
       <button class="mobile-item" data-tab="checkin">打卡</button>
     </nav>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="./script.js"></script>
   </body>
 </html>

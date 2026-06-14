@@ -3,6 +3,14 @@ const importStorageKey = "qinx_imported_sources_v1";
 const theoryProgressKey = "qinx_theory_progress_v1";
 const appDataKey = "qinxi_app_data_v2";
 const appDataVersion = 2;
+const supabaseUrl = "https://rwrqumnbgxcqonpvfxqj.supabase.co";
+const supabasePublishableKey = "sb_publishable_sStbbTzJvM_7ehaSUJBN9A_GJcG90Ee";
+const cloudDataTable = "qinxi_user_data";
+
+let supabaseClient = null;
+let currentUser = null;
+let isApplyingCloudData = false;
+let cloudSyncTimer = null;
 
 const theoryLevels = [
   {
@@ -435,6 +443,12 @@ const els = {
   practiceTopic: document.querySelector("#practiceTopic"),
   practiceNote: document.querySelector("#practiceNote"),
   formMessage: document.querySelector("#formMessage"),
+  syncForm: document.querySelector("#syncForm"),
+  syncEmail: document.querySelector("#syncEmail"),
+  syncTitle: document.querySelector("#syncTitle"),
+  syncStatus: document.querySelector("#syncStatus"),
+  syncNow: document.querySelector("#syncNow"),
+  signOut: document.querySelector("#signOut"),
   streakDays: document.querySelector("#streakDays"),
   weekMinutes: document.querySelector("#weekMinutes"),
   totalMinutes: document.querySelector("#totalMinutes"),
@@ -520,6 +534,7 @@ function writeAppData(data) {
     }
   };
   localStorage.setItem(appDataKey, JSON.stringify(nextData));
+  if (!isApplyingCloudData) scheduleCloudSync();
 }
 
 function readRecords() {
@@ -582,6 +597,240 @@ function writeImports(items) {
   const data = readAppData();
   data.imports = items;
   writeAppData(data);
+}
+
+function getSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+  if (!window.supabase || typeof window.supabase.createClient !== "function") return null;
+
+  supabaseClient = window.supabase.createClient(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  });
+  return supabaseClient;
+}
+
+function setSyncStatus(message) {
+  if (els.syncStatus) els.syncStatus.textContent = message;
+}
+
+function getAppUrl() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+function updateSyncUI(message) {
+  const client = getSupabaseClient();
+  if (!els.syncTitle) return;
+
+  if (!client) {
+    els.syncTitle.textContent = "云同步未加载";
+    setSyncStatus("当前网络没有加载同步组件，仍可继续使用本地记录。");
+    els.syncForm.hidden = false;
+    els.syncNow.hidden = true;
+    els.signOut.hidden = true;
+    return;
+  }
+
+  if (currentUser) {
+    els.syncTitle.textContent = `已登录：${currentUser.email || "当前账号"}`;
+    setSyncStatus(message || "云同步已开启。打卡、学习进度和做题记录会自动保存到云端。");
+    els.syncForm.hidden = true;
+    els.syncNow.hidden = false;
+    els.signOut.hidden = false;
+    return;
+  }
+
+  els.syncTitle.textContent = "未登录";
+  setSyncStatus(message || "输入邮箱后会收到登录链接。电脑和手机用同一个邮箱登录即可同步。");
+  els.syncForm.hidden = false;
+  els.syncNow.hidden = true;
+  els.signOut.hidden = true;
+}
+
+function normalizeAppData(data) {
+  const empty = createEmptyAppData();
+  const source = data || {};
+  return {
+    ...empty,
+    ...source,
+    version: appDataVersion,
+    profile: {
+      ...empty.profile,
+      ...(source.profile || {})
+    },
+    records: (source.records || []).map(normalizeRecord),
+    lessonProgress: source.lessonProgress || {},
+    questionStats: source.questionStats || {},
+    imports: source.imports || [],
+    sync: {
+      ...empty.sync,
+      ...(source.sync || {})
+    }
+  };
+}
+
+function timestampValue(value) {
+  return value ? new Date(value).getTime() || 0 : 0;
+}
+
+function mergeRecords(first, second) {
+  const byId = new Map();
+  [...(first || []), ...(second || [])].map(normalizeRecord).forEach(record => {
+    const existing = byId.get(record.id);
+    if (!existing || timestampValue(record.updatedAt || record.createdAt) >= timestampValue(existing.updatedAt || existing.createdAt)) {
+      byId.set(record.id, record);
+    }
+  });
+  return [...byId.values()].sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function mergeImports(first, second) {
+  const byKey = new Map();
+  [...(first || []), ...(second || [])].forEach(item => {
+    const key = item.id || item.url || `${item.title || "素材"}-${item.createdAt || ""}`;
+    const existing = byKey.get(key);
+    if (!existing || timestampValue(item.updatedAt || item.createdAt) >= timestampValue(existing.updatedAt || existing.createdAt)) {
+      byKey.set(key, item);
+    }
+  });
+  return [...byKey.values()].sort((a, b) => timestampValue(b.createdAt) - timestampValue(a.createdAt));
+}
+
+function mergeQuestionStats(first, second) {
+  const merged = {};
+  const ids = new Set([...Object.keys(first || {}), ...Object.keys(second || {})]);
+  ids.forEach(id => {
+    const left = first?.[id] || {};
+    const right = second?.[id] || {};
+    merged[id] = {
+      attempts: Math.max(Number(left.attempts) || 0, Number(right.attempts) || 0),
+      correct: Math.max(Number(left.correct) || 0, Number(right.correct) || 0),
+      lastPracticedAt:
+        timestampValue(left.lastPracticedAt) >= timestampValue(right.lastPracticedAt)
+          ? left.lastPracticedAt || null
+          : right.lastPracticedAt || null
+    };
+  });
+  return merged;
+}
+
+function mergeAppData(remoteData, localData) {
+  const remote = normalizeAppData(remoteData);
+  const local = normalizeAppData(localData);
+  return {
+    ...local,
+    profile: {
+      ...remote.profile,
+      ...local.profile,
+      email: currentUser?.email || local.profile.email || remote.profile.email
+    },
+    records: mergeRecords(remote.records, local.records),
+    lessonProgress: {
+      ...remote.lessonProgress,
+      ...local.lessonProgress
+    },
+    questionStats: mergeQuestionStats(remote.questionStats, local.questionStats),
+    imports: mergeImports(remote.imports, local.imports),
+    sync: {
+      ...local.sync,
+      updatedAt:
+        timestampValue(local.sync?.updatedAt) >= timestampValue(remote.sync?.updatedAt)
+          ? local.sync?.updatedAt
+          : remote.sync?.updatedAt
+    }
+  };
+}
+
+function renderAll() {
+  renderLessons();
+  renderScores();
+  renderImports();
+  renderStats();
+}
+
+function scheduleCloudSync() {
+  if (!currentUser || !getSupabaseClient()) return;
+  window.clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = window.setTimeout(() => {
+    saveCloudData("已自动同步到云端。").catch(error => {
+      console.error(error);
+      setSyncStatus("自动同步失败：请检查 Supabase 表是否已创建。");
+    });
+  }, 1000);
+}
+
+async function saveCloudData(successMessage = "已同步到云端。") {
+  const client = getSupabaseClient();
+  if (!client || !currentUser) return;
+
+  const data = readAppData();
+  data.profile = {
+    ...(data.profile || {}),
+    email: currentUser.email
+  };
+
+  const { error } = await client.from(cloudDataTable).upsert(
+    {
+      user_id: currentUser.id,
+      data,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: "user_id" }
+  );
+
+  if (error) throw error;
+  setSyncStatus(successMessage);
+}
+
+async function loadCloudData() {
+  const client = getSupabaseClient();
+  if (!client || !currentUser) return;
+
+  setSyncStatus("正在合并本机和云端数据...");
+  const { data: row, error } = await client
+    .from(cloudDataTable)
+    .select("data, updated_at")
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  const merged = row?.data ? mergeAppData(row.data, readAppData()) : normalizeAppData(readAppData());
+  isApplyingCloudData = true;
+  writeAppData(merged);
+  isApplyingCloudData = false;
+  renderAll();
+  await saveCloudData(row?.data ? "已合并电脑和手机数据。" : "已把本机数据上传到云端。");
+}
+
+async function initCloudSync() {
+  const client = getSupabaseClient();
+  updateSyncUI();
+  if (!client) return;
+
+  const { data } = await client.auth.getSession();
+  currentUser = data.session?.user || null;
+  updateSyncUI();
+  if (currentUser) {
+    loadCloudData().catch(error => {
+      console.error(error);
+      setSyncStatus("云同步初始化失败：请先运行 Supabase 数据表 SQL。");
+    });
+  }
+
+  client.auth.onAuthStateChange((_event, session) => {
+    currentUser = session?.user || null;
+    updateSyncUI(currentUser ? "已登录，正在同步数据..." : "已退出登录，本机数据仍保留。");
+    if (currentUser) {
+      loadCloudData().catch(error => {
+        console.error(error);
+        setSyncStatus("同步失败：请确认 Supabase 数据表和权限策略已创建。");
+      });
+    }
+  });
 }
 
 function formatDate(date) {
@@ -1531,6 +1780,44 @@ function setupEvents() {
     els.importForm.reset();
     renderImports();
   });
+
+  els.syncForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const client = getSupabaseClient();
+    const email = els.syncEmail.value.trim();
+    if (!client || !email) return;
+
+    setSyncStatus("正在发送登录链接...");
+    const { error } = await client.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: getAppUrl()
+      }
+    });
+
+    if (error) {
+      setSyncStatus(`发送失败：${error.message}`);
+      return;
+    }
+
+    setSyncStatus("登录链接已发送。打开邮件里的链接后，会自动回到琴习完成同步。");
+  });
+
+  els.signOut.addEventListener("click", async () => {
+    const client = getSupabaseClient();
+    if (!client) return;
+    await client.auth.signOut();
+    currentUser = null;
+    updateSyncUI("已退出登录，本机数据仍保留。");
+  });
+
+  els.syncNow.addEventListener("click", () => {
+    loadCloudData().catch(error => {
+      console.error(error);
+      setSyncStatus("同步失败：请确认 Supabase 数据表和权限策略已创建。");
+    });
+  });
 }
 
 function init() {
@@ -1540,6 +1827,7 @@ function init() {
   renderImports();
   renderStats();
   setupEvents();
+  initCloudSync();
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     navigator.serviceWorker.register("./sw.js").catch(() => {});

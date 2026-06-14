@@ -210,6 +210,7 @@ button {
 
 .stat-card,
 .record-summary article,
+.sync-panel,
 .focus-card,
 .today-card,
 .lesson-card,
@@ -229,6 +230,63 @@ button {
 .stat-card,
 .record-summary article {
   padding: 18px;
+}
+
+.sync-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.7fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px;
+}
+
+.sync-panel h3,
+.sync-panel p {
+  margin: 0;
+}
+
+.sync-panel p:not(.eyebrow) {
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.sync-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.sync-form[hidden],
+.sync-actions [hidden] {
+  display: none;
+}
+
+.sync-form input {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 13px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.ghost-action {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 14px;
+  background: rgba(255, 253, 248, 0.78);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .stat-card span,
@@ -1249,6 +1307,7 @@ button {
 
   .stats-grid,
   .record-summary,
+  .sync-panel,
   .home-layout,
   .level-layout,
   .level-content-grid,
@@ -1260,6 +1319,17 @@ button {
   .checkin-form,
   .score-views {
     grid-template-columns: 1fr;
+  }
+
+  .sync-form,
+  .sync-actions {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .sync-form .primary-action,
+  .sync-actions button {
+    width: 100%;
   }
 
   .level-list {
@@ -1320,6 +1390,7 @@ button {
 
   .focus-card,
   .today-card,
+  .sync-panel,
   .lesson-card,
   .practice-item,
   .resource-card,
