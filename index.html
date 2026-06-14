@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2e5f4d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="琴习" />
+    <title>琴习 - 钢琴学习打卡</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark">琴</div>
+          <div>
+            <h1>琴习</h1>
+            <p>零基础钢琴学习打卡</p>
+          </div>
+        </div>
+        <nav class="desktop-nav">
+          <button class="nav-item active" data-tab="home">首页</button>
+          <button class="nav-item" data-tab="theory">学习</button>
+          <button class="nav-item" data-tab="scores">乐谱</button>
+          <button class="nav-item" data-tab="import">导入</button>
+          <button class="nav-item" data-tab="checkin">打卡</button>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section class="tab-panel active" id="home">
+          <div class="page-heading">
+            <p class="eyebrow">今日练习</p>
+            <h2 id="todayTitle">今天也来摸摸琴键</h2>
+            <p>用小块时间建立稳定习惯。先练对，再慢慢练快。</p>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span>连续打卡</span>
+              <strong id="streakDays">0 天</strong>
+            </article>
+            <article class="stat-card">
+              <span>本周练习</span>
+              <strong id="weekMinutes">0 分钟</strong>
+            </article>
+            <article class="stat-card">
+              <span>累计练习</span>
+              <strong id="totalMinutes">0 分钟</strong>
+            </article>
+          </div>
+
+          <div class="home-layout">
+            <article class="focus-card">
+              <div>
+                <p class="eyebrow">20 分钟计划</p>
+                <h3>今日推荐</h3>
+              </div>
+              <ol class="plan-list">
+                <li><span>5 分钟</span>去学习页做一个音符或键盘识别练习</li>
+                <li><span>10 分钟</span>选一条练琴动作，只慢练一个小片段</li>
+                <li><span>5 分钟</span>打开乐谱页，找一首公共版权入门曲听/看/弹</li>
+                <li><span>2 分钟</span>打卡记录今天卡住的点</li>
+              </ol>
+              <button class="primary-action" data-go="checkin">完成后去打卡</button>
+            </article>
+
+            <article class="today-card">
+              <p class="eyebrow">今天状态</p>
+              <h3 id="todayStatus">还没有打卡</h3>
+              <p id="todaySummary">练完以后记录一下内容和感受，明天会更容易接上。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="theory">
+          <div class="page-heading split-heading">
+            <div>
+              <p class="eyebrow">学习</p>
+              <h2>乐理和练琴放在一起学</h2>
+              <p>先用互动练习建立识谱和键盘位置感，再用练琴动作把知识落到手上。</p>
+            </div>
+            <div class="learning-jumps">
+              <a href="#learning-drills">互动训练</a>
+              <a href="#learning-reference">乐理速查</a>
+              <a href="#learning-sources">靠谱来源</a>
+            </div>
+          </div>
+          <div class="level-layout" id="learning-drills">
+            <div class="level-list" id="theoryLevels"></div>
+            <div class="level-detail" id="theoryLevelDetail"></div>
+          </div>
+          <div class="resource-section" id="learning-reference">
+            <div class="section-heading">
+              <h3>乐理速查</h3>
+              <p>把容易混的规则放在这里，配合上面的互动训练反复巩固。</p>
+            </div>
+            <div class="practice-list" id="practiceLessons"></div>
+          </div>
+          <div class="resource-section" id="learning-sources">
+            <div class="section-heading">
+              <h3>靠谱乐理来源</h3>
+              <p>先用这些网站补齐系统知识，再把重点整理回琴习。</p>
+            </div>
+            <div class="resource-grid" id="theoryResources"></div>
+          </div>
+          <div class="resource-section">
+            <div class="section-heading">
+              <h3>可借鉴的练琴产品</h3>
+              <p>这些产品的价值不只是内容多，而是练习反馈、分手练、循环练和进度感。</p>
+            </div>
+            <div class="resource-grid" id="practiceResources"></div>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="scores">
+          <div class="page-heading">
+            <p class="eyebrow">乐谱练习</p>
+            <h2>按风格找真实曲目</h2>
+            <p>先收录适合入门的公共领域旋律；现代流行、电子、摇滚和金属曲目可以作为练习目标，后续通过授权谱或自己上传来练。</p>
+          </div>
+          <div class="score-categories" id="scoreCategories"></div>
+          <div class="score-tools">
+            <button class="score-mode active" data-score-mode="both">对照</button>
+            <button class="score-mode" data-score-mode="staff">五线谱</button>
+            <button class="score-mode" data-score-mode="numbered">简谱</button>
+          </div>
+          <div class="score-list" id="scoreList"></div>
+          <div class="resource-section">
+            <div class="section-heading">
+              <h3>可靠乐谱来源</h3>
+              <p>优先用公共版权和明确授权的乐谱来源；现代流行曲用上传/购买授权谱更稳。</p>
+            </div>
+            <div class="resource-grid" id="scoreResources"></div>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="import">
+          <div class="page-heading">
+            <p class="eyebrow">小红书导入</p>
+            <h2>把刷到的内容变成自己的知识卡</h2>
+            <p>先保存链接和你能拿到的文字内容；真正自动读取视频需要登录授权、后端转写和版权校验，不能只靠当前本地网页完成。</p>
+          </div>
+          <div class="import-roadmap">
+            <article>
+              <strong>现在可用</strong>
+              <p>保存链接、标题和文字笔记，并整理成乐理、练琴步骤、琴谱草稿。</p>
+            </article>
+            <article>
+              <strong>下一步更实用</strong>
+              <p>支持上传截图、录屏、音频或视频文件，让 AI 从你提供的本地素材里提取知识点。</p>
+            </article>
+            <article>
+              <strong>自动读取视频</strong>
+              <p>需要后端服务和你授权登录，且只能处理你有权学习和保存的内容。</p>
+            </article>
+          </div>
+          <form class="import-form" id="importForm">
+            <label>
+              小红书链接
+              <input type="url" id="sourceUrl" placeholder="https://www.xiaohongshu.com/..." required />
+            </label>
+            <label>
+              标题（可选）
+              <input type="text" id="sourceTitle" placeholder="不填也可以，会自动用链接生成标题" />
+            </label>
+            <label class="full">
+              文案 / 字幕 / 你的笔记（可选）
+              <textarea id="sourceText" rows="7" placeholder="只有链接也可以先保存；有文字时会立刻整理成知识卡。"></textarea>
+            </label>
+            <button class="primary-action" type="submit">保存或整理</button>
+            <p class="form-message" id="importMessage" role="status"></p>
+          </form>
+          <div class="import-results" id="importResults"></div>
+        </section>
+
+        <section class="tab-panel" id="checkin">
+          <div class="page-heading">
+            <p class="eyebrow">每日打卡</p>
+            <h2>记录今天练了什么</h2>
+            <p>不用写很长，能让明天知道从哪里继续就够了。</p>
+          </div>
+          <form class="checkin-form" id="checkinForm">
+            <label>
+              日期
+              <input type="date" id="practiceDate" required />
+            </label>
+            <label>
+              练习时长（分钟）
+              <input type="number" id="practiceMinutes" min="1" max="300" value="20" required />
+            </label>
+            <label>
+              今天练了什么
+              <select id="practiceTopic">
+                <option>手型和五指练习</option>
+                <option>识谱和中央 C</option>
+                <option>节拍器练习</option>
+                <option>单手练习</option>
+                <option>双手配合</option>
+                <option>音阶或和弦</option>
+                <option>自由练习</option>
+              </select>
+            </label>
+            <fieldset>
+              <legend>今天感觉</legend>
+              <div class="segmented">
+                <label><input type="radio" name="mood" value="轻松" checked />轻松</label>
+                <label><input type="radio" name="mood" value="一般" />一般</label>
+                <label><input type="radio" name="mood" value="困难" />困难</label>
+              </div>
+            </fieldset>
+            <label class="full">
+              备注
+              <textarea id="practiceNote" rows="4" placeholder="例如：右手第三指容易紧张，明天继续慢练。"></textarea>
+            </label>
+            <button class="primary-action" type="submit">保存打卡</button>
+            <p class="form-message" id="formMessage" role="status"></p>
+          </form>
+          <div class="section-heading log-heading">
+            <h3>打卡日志</h3>
+            <p>这里保存本机浏览器里的练习记录。</p>
+          </div>
+          <div class="record-summary">
+            <article><span>打卡天数</span><strong id="recordDays">0</strong></article>
+            <article><span>平均时长</span><strong id="avgMinutes">0 分钟</strong></article>
+            <article><span>最近练习</span><strong id="lastPractice">暂无</strong></article>
+          </div>
+          <div class="records-list" id="recordsList"></div>
+        </section>
+      </main>
+    </div>
+
+    <nav class="mobile-nav" aria-label="底部导航">
+      <button class="mobile-item active" data-tab="home">首页</button>
+      <button class="mobile-item" data-tab="theory">学习</button>
+      <button class="mobile-item" data-tab="scores">乐谱</button>
+      <button class="mobile-item" data-tab="import">导入</button>
+      <button class="mobile-item" data-tab="checkin">打卡</button>
+    </nav>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
