@@ -445,6 +445,7 @@ const els = {
   formMessage: document.querySelector("#formMessage"),
   syncForm: document.querySelector("#syncForm"),
   syncEmail: document.querySelector("#syncEmail"),
+  sendLoginLink: document.querySelector("#sendLoginLink"),
   syncTitle: document.querySelector("#syncTitle"),
   syncStatus: document.querySelector("#syncStatus"),
   syncNow: document.querySelector("#syncNow"),
@@ -1800,7 +1801,9 @@ function setupEvents() {
     }
     if (!email) return;
 
-    setSyncStatus("正在发送登录链接...");
+    setSyncStatus("正在发送登录链接，手机网络慢时可能需要半分钟左右...");
+    els.sendLoginLink.disabled = true;
+    els.sendLoginLink.textContent = "发送中...";
     let result;
     try {
       result = await withTimeout(
@@ -1811,20 +1814,26 @@ function setupEvents() {
             emailRedirectTo: getAppUrl()
           }
         }),
-        12000,
-        "发送超时。请确认手机网络能访问 Supabase，或稍后再试。"
+        45000,
+        "发送超时。手机网络到 Supabase 可能较慢，请切换 Wi-Fi 或稍后再试。"
       );
     } catch (error) {
       setSyncStatus(error.message);
+      els.sendLoginLink.disabled = false;
+      els.sendLoginLink.textContent = "重新发送";
       return;
     }
 
     if (result.error) {
       setSyncStatus(`发送失败：${result.error.message}`);
+      els.sendLoginLink.disabled = false;
+      els.sendLoginLink.textContent = "重新发送";
       return;
     }
 
     setSyncStatus("登录链接已发送。打开邮件里的链接后，会自动回到琴习完成同步。");
+    els.sendLoginLink.disabled = false;
+    els.sendLoginLink.textContent = "重新发送";
   });
 
   els.signOut.addEventListener("click", async () => {
