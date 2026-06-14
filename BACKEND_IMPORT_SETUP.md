@@ -22,17 +22,45 @@
 
 ## 部署步骤
 
-先安装 Supabase CLI：
+先安装 Supabase CLI。你的终端如果出现 `zsh: command not found: brew`，说明 Mac 还没有 Homebrew，不能直接跑下面这条。
+
+方式 A：已经安装 Homebrew 时：
 
 ```bash
 brew install supabase/tap/supabase
 ```
+
+方式 B：没有 Homebrew，但已安装 Node.js 20+ 时，用官方支持的 `npx` 方式：
+
+```bash
+npx supabase --help
+```
+
+后面的命令都可以写成 `npx supabase ...`，例如：
+
+```bash
+npx supabase login
+npx supabase link --project-ref rwrqumnbgxcqonpvfxqj
+```
+
+方式 C：既没有 Homebrew，也没有 Node/npm 时：
+
+1. 先安装 Node.js 20 LTS（安装完成后重新打开终端）。
+2. 运行 `node -v` 和 `npx -v`，确认命令存在。
+3. 再按方式 B 继续。
 
 登录并关联项目：
 
 ```bash
 supabase login
 supabase link --project-ref rwrqumnbgxcqonpvfxqj
+```
+
+如果你走的是 `npx` 方式，就用：
+
+```bash
+npx supabase login
+npx supabase link --project-ref rwrqumnbgxcqonpvfxqj
 ```
 
 配置 AI 解析 key：
@@ -42,10 +70,23 @@ supabase secrets set OPENAI_API_KEY=你的_OpenAI_API_Key
 supabase secrets set OPENAI_IMPORT_MODEL=gpt-4.1-mini
 ```
 
+`npx` 方式：
+
+```bash
+npx supabase secrets set OPENAI_API_KEY=你的_OpenAI_API_Key
+npx supabase secrets set OPENAI_IMPORT_MODEL=gpt-4.1-mini
+```
+
 部署函数：
 
 ```bash
 supabase functions deploy analyze-import
+```
+
+`npx` 方式：
+
+```bash
+npx supabase functions deploy analyze-import
 ```
 
 部署后，琴习前端会自动调用：
