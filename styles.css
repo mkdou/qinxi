@@ -63,9 +63,8 @@ button {
 }
 
 .brand-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -74,7 +73,12 @@ button {
   font-size: 24px;
   font-weight: 800;
   line-height: 1;
-  padding-bottom: 1px;
+  text-indent: 1px;
+}
+
+.brand-mark::first-letter {
+  display: inline-block;
+  transform: translateY(1px);
 }
 
 .brand h1,
@@ -446,12 +450,23 @@ button {
 }
 
 .level-progress strong {
+  display: block;
   font-size: 28px;
 }
 
 .level-progress span {
   color: #dfece3;
   font-weight: 700;
+}
+
+.level-progress button {
+  border: 1px solid rgba(255, 253, 248, 0.48);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: transparent;
+  color: #fffdf8;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .level-button {
@@ -594,6 +609,18 @@ button {
   border: 1px solid #d8d8d8;
   border-radius: 10px;
   background: #f7f7f7;
+}
+
+.choice-prompt {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.choice-prompt h4 {
+  margin: 0;
+  text-align: center;
+  font-size: 24px;
 }
 
 .drill-stats {
@@ -1036,7 +1063,7 @@ button {
 
 .score-views {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.6fr);
   gap: 14px;
 }
 
@@ -1049,10 +1076,11 @@ button {
   min-height: 0;
   overflow-x: auto;
   padding: 10px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .score-staff svg {
-  width: max(100%, 560px);
+  width: max(100%, 680px);
   max-width: none;
 }
 
@@ -1081,6 +1109,13 @@ button {
 
 .import-panel p {
   margin-top: 8px;
+}
+
+.import-panel ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  color: #465149;
+  line-height: 1.7;
 }
 
 .score-tip {
@@ -1342,6 +1377,29 @@ button {
 
   .level-list {
     position: static;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .level-layout {
+    gap: 12px;
+  }
+
+  .level-progress {
+    flex: 0 0 150px;
+    min-height: 82px;
+  }
+
+  .level-button {
+    flex: 0 0 230px;
+    scroll-snap-align: start;
+  }
+
+  .level-button em {
+    grid-column: 2;
   }
 
   .level-card {
@@ -1357,7 +1415,8 @@ button {
   }
 
   .page-heading h2 {
-    font-size: 32px;
+    font-size: 34px;
+    max-width: 100%;
   }
 
   .mobile-nav {
@@ -1421,6 +1480,15 @@ button {
     font-size: 12px;
   }
 
+  .page-heading h2 {
+    font-size: 30px;
+    line-height: 1.12;
+  }
+
+  .page-heading p {
+    font-size: 15px;
+  }
+
   .drill-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 14px;
@@ -1428,5 +1496,25 @@ button {
 
   .drill-stage {
     padding: 18px 12px 8px;
+  }
+}
+
+@media (max-width: 940px) and (orientation: landscape) {
+  .content {
+    padding-bottom: 82px;
+  }
+
+  .score-views {
+    grid-template-columns: minmax(560px, 1.6fr) minmax(240px, 0.6fr);
+    overflow-x: auto;
+  }
+
+  .level-layout {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  .level-list {
+    max-height: calc(100vh - 120px);
+    overflow: auto;
   }
 }

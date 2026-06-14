@@ -12,6 +12,7 @@ let supabaseClient = null;
 let currentUser = null;
 let isApplyingCloudData = false;
 let cloudSyncTimer = null;
+let cloudPullTimer = null;
 
 const theoryLevels = [
   {
@@ -45,6 +46,16 @@ const theoryLevels = [
     drill: "staff"
   },
   {
+    id: "staff-ledger",
+    group: "Notation",
+    title: "上加线和下加线",
+    summary: "专门练五线谱范围外的音：高音谱号下加一线中央 C、上加线高音，以及低音谱号上下加线。",
+    contents: ["下加线", "上加线", "谱表外音"],
+    visual: staffVisual("加线练习：中央 C 和高音", ["C4", "D4", "A5"]),
+    points: ["高音谱号下加一线是中央 C", "谱表外每加一线或一间，仍按音名顺序往上或往下走", "加线不要背孤立点，先找最近的一条谱线定位"],
+    drill: "staff-ledger"
+  },
+  {
     id: "steps",
     group: "Pitch",
     title: "半音和全音",
@@ -52,12 +63,12 @@ const theoryLevels = [
     contents: ["半音", "全音", "升号和降号"],
     visual: keyboardVisual(["C", "C#", "D", "D#", "E", "F", "F#"], "相邻琴键是半音，两个半音是全音"),
     points: ["相邻两个琴键的距离是半音", "两个半音组成一个全音", "E-F、B-C 中间没有黑键，所以它们本身就是半音"],
-    quiz: {
-      question: "下面哪一组在钢琴上是半音？",
-      options: ["E 到 F", "C 到 D", "F 到 G"],
-      answer: "E 到 F",
-      explain: "E 和 F 中间没有黑键，是相邻琴键，所以是半音。"
-    }
+    drill: "choice",
+    questions: [
+      { prompt: "哪一组是半音？", options: ["E 到 F", "C 到 D", "F 到 G"], answer: "E 到 F", explain: "E 和 F 中间没有黑键，是相邻琴键。" },
+      { prompt: "C 到 D 是什么距离？", options: ["全音", "半音", "三度"], answer: "全音", explain: "C 到 C# 是半音，C# 到 D 又是半音，所以 C 到 D 是全音。" },
+      { prompt: "B 到 C 是什么距离？", options: ["半音", "全音", "八度"], answer: "半音", explain: "B 和 C 中间没有黑键，所以它们是半音。" }
+    ]
   },
   {
     id: "clefs",
@@ -67,12 +78,12 @@ const theoryLevels = [
     contents: ["高音谱号", "低音谱号", "左右手音区"],
     visual: noteMapVisual(),
     points: ["高音谱号常对应右手和较高音区", "低音谱号常对应左手和较低音区", "同一个音符位置在不同谱号里可能代表不同音"],
-    quiz: {
-      question: "初学钢琴时，低音谱号通常更常给哪只手看？",
-      options: ["左手", "右手", "两只脚"],
-      answer: "左手",
-      explain: "钢琴大谱表中，低音谱号通常负责左手的低音区。"
-    }
+    drill: "choice",
+    questions: [
+      { prompt: "低音谱号通常更常给哪只手看？", options: ["左手", "右手", "两只脚"], answer: "左手", explain: "钢琴大谱表中，低音谱号通常负责左手的低音区。" },
+      { prompt: "高音谱号第 2 线是什么音？", options: ["G", "F", "C"], answer: "G", explain: "高音谱号也叫 G 谱号，它圈住的第 2 线是 G。" },
+      { prompt: "同一个位置换了谱号，音名会怎样？", options: ["可能变", "永远不变", "只变节奏"], answer: "可能变", explain: "谱号决定五线谱位置对应的音名。" }
+    ]
   },
   {
     id: "rhythm",
@@ -82,12 +93,12 @@ const theoryLevels = [
     contents: ["小节", "4/4 拍", "强弱规律"],
     visual: rhythmVisual(["1", "2", "3", "4"], "4/4 拍：一小节数四下"),
     points: ["4/4 拍表示每小节有 4 拍", "四分音符通常算一拍", "练琴时先能稳定数拍，再追求速度"],
-    quiz: {
-      question: "4/4 拍通常表示一小节有几拍？",
-      options: ["4 拍", "3 拍", "8 拍"],
-      answer: "4 拍",
-      explain: "4/4 拍的上方数字 4 表示每小节有 4 拍。"
-    }
+    drill: "choice",
+    questions: [
+      { prompt: "4/4 拍通常表示一小节有几拍？", options: ["4 拍", "3 拍", "8 拍"], answer: "4 拍", explain: "4/4 拍的上方数字 4 表示每小节有 4 拍。" },
+      { prompt: "练节拍时应该先追求什么？", options: ["稳定", "很快", "很响"], answer: "稳定", explain: "先能稳定数拍，再慢慢加速度。" },
+      { prompt: "休止符出现时应该怎样？", options: ["不弹但继续数拍", "跳过", "加速"], answer: "不弹但继续数拍", explain: "休止符是音乐的一部分，心里仍然要数拍。" }
+    ]
   },
   {
     id: "duration",
@@ -97,12 +108,12 @@ const theoryLevels = [
     contents: ["全音符", "二分音符", "四分音符", "八分音符"],
     visual: rhythmVisual(["全音符 4 拍", "二分 2 拍", "四分 1 拍", "八分 1/2 拍"], "先理解长度，再看谱弹"),
     points: ["四分音符常作为一拍", "二分音符通常持续两拍", "休止符表示不弹，但仍然要在心里数拍"],
-    quiz: {
-      question: "在常见 4/4 拍里，二分音符通常持续几拍？",
-      options: ["2 拍", "1 拍", "4 拍"],
-      answer: "2 拍",
-      explain: "二分音符通常持续 2 拍，四分音符通常持续 1 拍。"
-    }
+    drill: "choice",
+    questions: [
+      { prompt: "二分音符通常持续几拍？", options: ["2 拍", "1 拍", "4 拍"], answer: "2 拍", explain: "二分音符通常持续 2 拍。" },
+      { prompt: "四分音符通常算几拍？", options: ["1 拍", "2 拍", "半拍"], answer: "1 拍", explain: "常见入门里四分音符先按 1 拍理解。" },
+      { prompt: "全音符在 4/4 拍里通常持续多久？", options: ["4 拍", "2 拍", "1 拍"], answer: "4 拍", explain: "全音符通常占满一整个 4/4 小节。" }
+    ]
   },
   {
     id: "chords",
@@ -112,12 +123,12 @@ const theoryLevels = [
     contents: ["C 大调音阶", "1-3-5", "三和弦"],
     visual: chordVisual(),
     points: ["C 大调音阶全用白键", "三和弦通常取音阶里的 1、3、5", "C 大三和弦由 C、E、G 组成"],
-    quiz: {
-      question: "C 大三和弦由哪三个音组成？",
-      options: ["C E G", "C D E", "D F A"],
-      answer: "C E G",
-      explain: "C 大三和弦取 C 大调里的 1、3、5，也就是 C、E、G。"
-    }
+    drill: "choice",
+    questions: [
+      { prompt: "C 大三和弦由哪三个音组成？", options: ["C E G", "C D E", "D F A"], answer: "C E G", explain: "C 大三和弦取 C 大调里的 1、3、5，也就是 C、E、G。" },
+      { prompt: "三和弦常取音阶里的哪几个级数？", options: ["1 3 5", "1 2 3", "2 4 6"], answer: "1 3 5", explain: "最基础的三和弦先按 1、3、5 理解。" },
+      { prompt: "C 大调音阶主要用哪些琴键？", options: ["白键", "黑键", "只用 C"], answer: "白键", explain: "C 大调没有升降号，先从白键练起。" }
+    ]
   }
 ];
 
@@ -197,10 +208,29 @@ const staffDrillNotes = {
   ]
 };
 
+const staffLedgerDrillNotes = {
+  treble: [
+    { name: "C", octave: 4, step: -2, ledger: "below" },
+    { name: "D", octave: 4, step: -1 },
+    { name: "A", octave: 5, step: 10, ledger: "above" },
+    { name: "B", octave: 5, step: 11, ledger: "above" },
+    { name: "C", octave: 6, step: 12, ledger: "above" }
+  ],
+  bass: [
+    { name: "E", octave: 2, step: -4, ledger: "below" },
+    { name: "F", octave: 2, step: -3, ledger: "below" },
+    { name: "C", octave: 4, step: 10, ledger: "above" },
+    { name: "D", octave: 4, step: 11, ledger: "above" },
+    { name: "E", octave: 4, step: 12, ledger: "above" }
+  ]
+};
+
 const drillState = {
   keyboard: { note: null, status: "idle", correct: 0, attempts: 0 },
   black: { note: null, naming: "sharp", status: "idle", correct: 0, attempts: 0 },
-  staff: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 }
+  staff: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
+  staffLedger: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
+  choice: {}
 };
 
 function randomItem(items) {
@@ -217,6 +247,13 @@ function ensureDrillQuestion(type) {
   if (type === "staff" && !drillState.staff.note) {
     drillState.staff.note = randomItem(staffDrillNotes[drillState.staff.clef]);
   }
+  if (type === "staffLedger" && !drillState.staffLedger.note) {
+    drillState.staffLedger.note = randomItem(staffLedgerDrillNotes[drillState.staffLedger.clef]);
+  }
+}
+
+function getAllTheoryLevels() {
+  return [...theoryLevels, ...buildImportedTheoryLevels()];
 }
 
 const practiceLessons = [
@@ -512,6 +549,51 @@ function normalizeRecord(record) {
   };
 }
 
+function getDeviceId(data = readAppData()) {
+  const hasRandomUUID = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function";
+  if (!data.sync) data.sync = {};
+  if (!data.sync.deviceId) {
+    data.sync.deviceId = hasRandomUUID ? crypto.randomUUID() : `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+  return data.sync.deviceId;
+}
+
+function normalizeQuestionStat(stat, fallbackDeviceId = "legacy") {
+  const byDevice = {};
+  if (stat?.byDevice && typeof stat.byDevice === "object") {
+    Object.entries(stat.byDevice).forEach(([deviceId, deviceStat]) => {
+      byDevice[deviceId] = {
+        attempts: Number(deviceStat?.attempts) || 0,
+        correct: Number(deviceStat?.correct) || 0,
+        lastPracticedAt: deviceStat?.lastPracticedAt || null
+      };
+    });
+  } else if (stat) {
+    byDevice[fallbackDeviceId] = {
+      attempts: Number(stat.attempts) || 0,
+      correct: Number(stat.correct) || 0,
+      lastPracticedAt: stat.lastPracticedAt || null
+    };
+  }
+
+  const totals = Object.values(byDevice).reduce(
+    (sum, item) => ({
+      attempts: sum.attempts + (Number(item.attempts) || 0),
+      correct: sum.correct + (Number(item.correct) || 0),
+      lastPracticedAt:
+        timestampValue(sum.lastPracticedAt) >= timestampValue(item.lastPracticedAt)
+          ? sum.lastPracticedAt
+          : item.lastPracticedAt || null
+    }),
+    { attempts: 0, correct: 0, lastPracticedAt: null }
+  );
+
+  return {
+    ...totals,
+    byDevice
+  };
+}
+
 function migrateAppData() {
   const existing = readLegacyJson(appDataKey, null);
   if (existing && existing.version === appDataVersion) return existing;
@@ -683,6 +765,11 @@ function updateSyncUI(message) {
 function normalizeAppData(data) {
   const empty = createEmptyAppData();
   const source = data || {};
+  const fallbackDeviceId = source.sync?.deviceId || empty.sync.deviceId;
+  const questionStats = {};
+  Object.entries(source.questionStats || {}).forEach(([levelId, stat]) => {
+    questionStats[levelId] = normalizeQuestionStat(stat, fallbackDeviceId);
+  });
   return {
     ...empty,
     ...source,
@@ -693,7 +780,7 @@ function normalizeAppData(data) {
     },
     records: (source.records || []).map(normalizeRecord),
     lessonProgress: source.lessonProgress || {},
-    questionStats: source.questionStats || {},
+    questionStats,
     imports: source.imports || [],
     sync: {
       ...empty.sync,
@@ -733,23 +820,62 @@ function mergeQuestionStats(first, second) {
   const merged = {};
   const ids = new Set([...Object.keys(first || {}), ...Object.keys(second || {})]);
   ids.forEach(id => {
-    const left = first?.[id] || {};
-    const right = second?.[id] || {};
-    merged[id] = {
-      attempts: Math.max(Number(left.attempts) || 0, Number(right.attempts) || 0),
-      correct: Math.max(Number(left.correct) || 0, Number(right.correct) || 0),
-      lastPracticedAt:
-        timestampValue(left.lastPracticedAt) >= timestampValue(right.lastPracticedAt)
-          ? left.lastPracticedAt || null
-          : right.lastPracticedAt || null
-    };
+    const left = normalizeQuestionStat(first?.[id]);
+    const right = normalizeQuestionStat(second?.[id]);
+    const byDevice = {};
+    new Set([...Object.keys(left.byDevice || {}), ...Object.keys(right.byDevice || {})]).forEach(deviceId => {
+      const leftStat = left.byDevice?.[deviceId] || {};
+      const rightStat = right.byDevice?.[deviceId] || {};
+      byDevice[deviceId] = {
+        attempts: Math.max(Number(leftStat.attempts) || 0, Number(rightStat.attempts) || 0),
+        correct: Math.max(Number(leftStat.correct) || 0, Number(rightStat.correct) || 0),
+        lastPracticedAt:
+          timestampValue(leftStat.lastPracticedAt) >= timestampValue(rightStat.lastPracticedAt)
+            ? leftStat.lastPracticedAt || null
+            : rightStat.lastPracticedAt || null
+      };
+    });
+    merged[id] = normalizeQuestionStat({ byDevice });
   });
   return merged;
+}
+
+function filterStatsAfterReset(stats, resetAt) {
+  if (!resetAt) return stats || {};
+  const resetTime = timestampValue(resetAt);
+  const nextStats = {};
+  Object.entries(stats || {}).forEach(([levelId, stat]) => {
+    const normalized = normalizeQuestionStat(stat);
+    const byDevice = {};
+    Object.entries(normalized.byDevice || {}).forEach(([deviceId, deviceStat]) => {
+      if (timestampValue(deviceStat.lastPracticedAt) > resetTime) byDevice[deviceId] = deviceStat;
+    });
+    const nextStat = normalizeQuestionStat({ byDevice });
+    if (nextStat.attempts > 0) nextStats[levelId] = nextStat;
+  });
+  return nextStats;
+}
+
+function filterProgressAfterReset(progress, stats, resetAt) {
+  if (!resetAt) return progress || {};
+  const nextProgress = {};
+  Object.entries(progress || {}).forEach(([levelId, completed]) => {
+    if (completed && stats?.[levelId]?.attempts) nextProgress[levelId] = true;
+  });
+  return nextProgress;
 }
 
 function mergeAppData(remoteData, localData) {
   const remote = normalizeAppData(remoteData);
   const local = normalizeAppData(localData);
+  const learningResetAt =
+    timestampValue(local.sync?.learningResetAt) >= timestampValue(remote.sync?.learningResetAt)
+      ? local.sync?.learningResetAt
+      : remote.sync?.learningResetAt;
+  const mergedStats = filterStatsAfterReset(
+    mergeQuestionStats(remote.questionStats, local.questionStats),
+    learningResetAt
+  );
   return {
     ...local,
     profile: {
@@ -758,14 +884,19 @@ function mergeAppData(remoteData, localData) {
       email: currentUser?.email || local.profile.email || remote.profile.email
     },
     records: mergeRecords(remote.records, local.records),
-    lessonProgress: {
-      ...remote.lessonProgress,
-      ...local.lessonProgress
-    },
-    questionStats: mergeQuestionStats(remote.questionStats, local.questionStats),
+    lessonProgress: filterProgressAfterReset(
+      {
+        ...remote.lessonProgress,
+        ...local.lessonProgress
+      },
+      mergedStats,
+      learningResetAt
+    ),
+    questionStats: mergedStats,
     imports: mergeImports(remote.imports, local.imports),
     sync: {
       ...local.sync,
+      learningResetAt,
       updatedAt:
         timestampValue(local.sync?.updatedAt) >= timestampValue(remote.sync?.updatedAt)
           ? local.sync?.updatedAt
@@ -792,6 +923,17 @@ function scheduleCloudSync() {
   }, 1000);
 }
 
+function startCloudAutoPull() {
+  window.clearInterval(cloudPullTimer);
+  if (!currentUser || !getSupabaseClient()) return;
+  cloudPullTimer = window.setInterval(() => {
+    loadCloudData({ silent: true }).catch(error => {
+      console.error(error);
+      setSyncStatus("自动同步失败：稍后会继续重试。");
+    });
+  }, 30000);
+}
+
 async function saveCloudData(successMessage = "已同步到云端。") {
   const client = getSupabaseClient();
   if (!client || !currentUser) return;
@@ -815,11 +957,11 @@ async function saveCloudData(successMessage = "已同步到云端。") {
   setSyncStatus(successMessage);
 }
 
-async function loadCloudData() {
+async function loadCloudData(options = {}) {
   const client = getSupabaseClient();
   if (!client || !currentUser) return;
 
-  setSyncStatus("正在合并本机和云端数据...");
+  if (!options.silent) setSyncStatus("正在合并本机和云端数据...");
   const { data: row, error } = await client
     .from(cloudDataTable)
     .select("data, updated_at")
@@ -833,7 +975,13 @@ async function loadCloudData() {
   writeAppData(merged);
   isApplyingCloudData = false;
   renderAll();
-  await saveCloudData(row?.data ? "已合并电脑和手机数据。" : "已把本机数据上传到云端。");
+  await saveCloudData(
+    row?.data
+      ? options.silent
+        ? "已自动同步。"
+        : "已合并电脑和手机数据。"
+      : "已把本机数据上传到云端。"
+  );
 }
 
 async function initCloudSync() {
@@ -849,6 +997,7 @@ async function initCloudSync() {
       console.error(error);
       setSyncStatus("云同步初始化失败：请先运行 Supabase 数据表 SQL。");
     });
+    startCloudAutoPull();
   }
 
   client.auth.onAuthStateChange((_event, session) => {
@@ -858,6 +1007,17 @@ async function initCloudSync() {
       loadCloudData().catch(error => {
         console.error(error);
         setSyncStatus("同步失败：请确认 Supabase 数据表和权限策略已创建。");
+      });
+      startCloudAutoPull();
+    } else {
+      window.clearInterval(cloudPullTimer);
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && currentUser) {
+      loadCloudData({ silent: true }).catch(error => {
+        console.error(error);
       });
     }
   });
@@ -1029,13 +1189,86 @@ function loopVisual() {
   `;
 }
 
+function noteToMidiName(note) {
+  const match = String(note).match(/^([A-G])(#|b)?(\d)$/);
+  if (!match) return null;
+  const [, name, accidental = "", octaveText] = match;
+  const natural = noteOptions.find(item => item.name === name);
+  if (!natural) return null;
+  const accidentalOffset = accidental === "#" ? 1 : accidental === "b" ? -1 : 0;
+  const octave = Number(octaveText);
+  return {
+    name,
+    accidental,
+    octave,
+    semitone: natural.semitone + accidentalOffset,
+    midi: 12 * (octave + 1) + natural.semitone + accidentalOffset,
+    numbered: natural.numbered
+  };
+}
+
 function scoreStaff(notes) {
-  return staffVisual("五线谱示意", notes).replace("visual-card", "visual-card score-staff");
+  const parsed = notes.map(noteToMidiName).filter(Boolean);
+  const width = Math.max(680, parsed.length * 48 + 120);
+  const bottomLineY = 128;
+  const stepGap = 9;
+  const noteToStep = note => {
+    const letters = ["C", "D", "E", "F", "G", "A", "B"];
+    return (note.octave - 4) * 7 + letters.indexOf(note.name) - 2;
+  };
+  const lines = [48, 68, 88, 108, 128]
+    .map(y => `<line x1="48" y1="${y}" x2="${width - 34}" y2="${y}" stroke="#333" stroke-width="1.5" />`)
+    .join("");
+  const notesMarkup = parsed
+    .map((note, index) => {
+      const x = 92 + index * 48;
+      const step = noteToStep(note);
+      const y = bottomLineY - step * stepGap;
+      const ledgers = [];
+      if (step <= -2) {
+        for (let ledgerStep = -2; ledgerStep >= step; ledgerStep -= 2) {
+          const ledgerY = bottomLineY - ledgerStep * stepGap;
+          ledgers.push(`<line x1="${x - 18}" y1="${ledgerY}" x2="${x + 18}" y2="${ledgerY}" stroke="#333" stroke-width="1.5" />`);
+        }
+      }
+      if (step >= 10) {
+        for (let ledgerStep = 10; ledgerStep <= step; ledgerStep += 2) {
+          const ledgerY = bottomLineY - ledgerStep * stepGap;
+          ledgers.push(`<line x1="${x - 18}" y1="${ledgerY}" x2="${x + 18}" y2="${ledgerY}" stroke="#333" stroke-width="1.5" />`);
+        }
+      }
+      return `
+        <g>
+          ${ledgers.join("")}
+          ${note.accidental ? `<text x="${x - 22}" y="${y + 5}" fill="#333" font-size="16" font-weight="800">${note.accidental}</text>` : ""}
+          <ellipse cx="${x}" cy="${y}" rx="14" ry="9" fill="#2e5f4d" transform="rotate(-16 ${x} ${y})" />
+          <text x="${x}" y="${y - 16}" text-anchor="middle" fill="#bf8f54" font-size="15" font-weight="900">${note.numbered}</text>
+          <text x="${x}" y="168" text-anchor="middle" fill="#1f2a24" font-size="13" font-weight="800">${note.name}${note.accidental}${note.octave}</text>
+        </g>
+      `;
+    })
+    .join("");
+
+  return `
+    <figure class="visual-card score-staff">
+      <svg viewBox="0 0 ${width} 186" role="img" aria-label="五线谱和简谱对照">
+        ${lines}
+        <text class="staff-clef" x="48" y="135" font-size="112" fill="#1f2a24">𝄞</text>
+        ${notesMarkup}
+      </svg>
+    </figure>
+  `;
 }
 
 function getAccuracy(state) {
   if (!state.attempts) return `0%（0/0）`;
   return `${Math.round((state.correct / state.attempts) * 100)}%（${state.correct}/${state.attempts}）`;
+}
+
+function getPersistedLevelStats(levelId, fallback = { attempts: 0, correct: 0 }) {
+  const stat = normalizeQuestionStat(readAppData().questionStats?.[levelId]);
+  if (stat.attempts) return stat;
+  return fallback;
 }
 
 function noteFrequency(note) {
@@ -1079,6 +1312,7 @@ function playTone(freq, isCorrect) {
 function renderPianoDrill() {
   ensureDrillQuestion("keyboard");
   const state = drillState.keyboard;
+  const stats = getPersistedLevelStats("notes", state);
   const activeIndex = pianoWhiteKeys.findIndex(
     note => note.name === state.note.name && note.octave === state.note.octave
   );
@@ -1093,8 +1327,8 @@ function renderPianoDrill() {
   return `
     <section class="drill-card">
       <div class="drill-stats">
-        <strong>${state.correct}/${state.attempts}</strong>
-        <strong>${getAccuracy(state)}</strong>
+        <strong>${stats.correct}/${stats.attempts}</strong>
+        <strong>${getAccuracy(stats)}</strong>
       </div>
       <div class="drill-stage ${state.status}">
         <svg class="drill-piano" viewBox="0 0 ${keyboardWidth} 210" role="img" aria-label="钢琴键盘认音练习">
@@ -1143,6 +1377,7 @@ function renderPianoDrill() {
 function renderBlackKeyDrill() {
   ensureDrillQuestion("black");
   const state = drillState.black;
+  const stats = getPersistedLevelStats("black-keys", state);
   const keyWidth = 40;
   const keyboardWidth = pianoWhiteKeys.length * keyWidth;
   const correctName = state.naming === "sharp" ? state.note.sharp : state.note.flat;
@@ -1154,7 +1389,8 @@ function renderBlackKeyDrill() {
   return `
     <section class="drill-card">
       <div class="drill-stats">
-        <strong>${getAccuracy(state)}</strong>
+        <strong>${stats.correct}/${stats.attempts}</strong>
+        <strong>${getAccuracy(stats)}</strong>
       </div>
       <div class="clef-switch">
         <button class="${state.naming === "sharp" ? "active" : ""}" data-black-naming="sharp">升号 #</button>
@@ -1201,9 +1437,11 @@ function renderBlackKeyDrill() {
   `;
 }
 
-function renderStaffDrill() {
-  ensureDrillQuestion("staff");
-  const state = drillState.staff;
+function renderStaffDrill(type = "staff") {
+  ensureDrillQuestion(type);
+  const state = drillState[type];
+  const levelId = type === "staffLedger" ? "staff-ledger" : "staff-note";
+  const stats = getPersistedLevelStats(levelId, state);
   const note = state.note;
   const noteInfo = noteOptions.find(item => item.name === note.name);
   const clefLabel = state.clef === "treble" ? "高音谱号" : "低音谱号";
@@ -1231,12 +1469,12 @@ function renderStaffDrill() {
   return `
     <section class="drill-card">
       <div class="drill-stats">
-        <strong>${state.correct}/${state.attempts}</strong>
-        <strong>${getAccuracy(state)}</strong>
+        <strong>${stats.correct}/${stats.attempts}</strong>
+        <strong>${getAccuracy(stats)}</strong>
       </div>
       <div class="clef-switch">
-        <button class="${state.clef === "treble" ? "active" : ""}" data-clef="treble">高音谱号</button>
-        <button class="${state.clef === "bass" ? "active" : ""}" data-clef="bass">低音谱号</button>
+        <button class="${state.clef === "treble" ? "active" : ""}" data-clef="treble" data-clef-drill="${type}">高音谱号</button>
+        <button class="${state.clef === "bass" ? "active" : ""}" data-clef="bass" data-clef-drill="${type}">低音谱号</button>
       </div>
       <div class="drill-stage ${state.status}">
         <svg class="drill-staff" viewBox="0 0 450 190" role="img" aria-label="${clefLabel}认音练习">
@@ -1253,7 +1491,7 @@ function renderStaffDrill() {
               const buttonState =
                 state.lastAnswer === option.name ? (state.status === "correct" ? "correct" : "wrong") : "";
               return `
-              <button class="${buttonState}" data-drill-type="staff" data-drill-answer="${option.name}">
+              <button class="${buttonState}" data-drill-type="${type}" data-drill-answer="${option.name}">
                 <strong>${option.name}</strong>
                 <span>${option.numbered} · ${["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"][noteOptions.indexOf(option)]}</span>
               </button>
@@ -1267,10 +1505,49 @@ function renderStaffDrill() {
   `;
 }
 
+function ensureChoiceQuestion(level) {
+  const state = drillState.choice[level.id] || { question: null, status: "idle", correct: 0, attempts: 0 };
+  if (!state.question) state.question = randomItem(level.questions);
+  drillState.choice[level.id] = state;
+  return state;
+}
+
+function renderChoiceDrill(level) {
+  const state = ensureChoiceQuestion(level);
+  const question = state.question;
+  const stats = getPersistedLevelStats(level.id, state);
+
+  return `
+    <section class="drill-card choice-drill">
+      <div class="drill-stats">
+        <strong>${stats.correct}/${stats.attempts}</strong>
+        <strong>${getAccuracy(stats)}</strong>
+      </div>
+      <div class="choice-prompt ${state.status}">
+        ${level.visual}
+        <h4>${question.prompt}</h4>
+      </div>
+      <div class="drill-options">
+        ${question.options
+          .map(option => {
+            const buttonState =
+              state.lastAnswer === option ? (state.status === "correct" ? "correct" : "wrong") : "";
+            return `<button class="${buttonState}" data-choice-level="${level.id}" data-choice-answer="${option}"><strong>${option}</strong></button>`;
+          })
+          .join("")}
+      </div>
+      <p class="drill-hint">${state.feedback || "选一个答案，答对后会自动进入下一题。"}</p>
+    </section>
+  `;
+}
+
 function renderDrill(level) {
   if (level.drill === "keyboard") return renderPianoDrill();
   if (level.drill === "black") return renderBlackKeyDrill();
-  return renderStaffDrill();
+  if (level.drill === "staff") return renderStaffDrill("staff");
+  if (level.drill === "staff-ledger") return renderStaffDrill("staffLedger");
+  if (level.drill === "choice") return renderChoiceDrill(level);
+  return "";
 }
 
 function renderLessons() {
@@ -1294,16 +1571,21 @@ function renderLessons() {
 }
 
 function renderTheoryLevels() {
+  const allLevels = getAllTheoryLevels();
   const progress = readTheoryProgress();
-  const completed = Object.values(progress).filter(Boolean).length;
-  const activeLevel = theoryLevels.find(level => level.id === activeTheoryLevelId) || theoryLevels[0];
+  const allLevelIds = new Set(allLevels.map(level => level.id));
+  const completed = Object.entries(progress).filter(([levelId, done]) => done && allLevelIds.has(levelId)).length;
+  const activeLevel = allLevels.find(level => level.id === activeTheoryLevelId) || allLevels[0];
 
   els.theoryLevels.innerHTML = `
     <div class="level-progress">
-      <strong>${completed}/${theoryLevels.length}</strong>
-      <span>已完成关卡</span>
+      <div>
+        <strong>${completed}/${allLevels.length}</strong>
+        <span>已完成关卡</span>
+      </div>
+      <button type="button" data-reset-learning>重置</button>
     </div>
-    ${theoryLevels
+    ${allLevels
       .map(
         (level, index) => `
           <button class="level-button ${level.id === activeLevel.id ? "active" : ""}" data-level-id="${level.id}">
@@ -1384,17 +1666,42 @@ function completeDrillLevel(levelId) {
   writeTheoryProgress(progress);
 }
 
+function resetLearningProgress() {
+  const confirmed = window.confirm("确认重置学习进度和做题统计吗？打卡日志、导入素材和账号登录不会删除。");
+  if (!confirmed) return;
+  const data = readAppData();
+  data.lessonProgress = {};
+  data.questionStats = {};
+  data.sync = {
+    ...(data.sync || {}),
+    learningResetAt: new Date().toISOString()
+  };
+  writeAppData(data);
+  Object.assign(drillState, {
+    keyboard: { note: null, status: "idle", correct: 0, attempts: 0 },
+    black: { note: null, naming: "sharp", status: "idle", correct: 0, attempts: 0 },
+    staff: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
+    staffLedger: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
+    choice: {}
+  });
+  renderTheoryLevels();
+  setSyncStatus("学习进度已重置，稍后会自动同步到云端。");
+}
+
 function recordQuestionAttempt(levelId, isCorrect) {
   const data = readAppData();
-  const stats = data.questionStats[levelId] || {
+  const deviceId = getDeviceId(data);
+  const stats = normalizeQuestionStat(data.questionStats[levelId], deviceId);
+  const deviceStats = stats.byDevice[deviceId] || {
     attempts: 0,
     correct: 0,
     lastPracticedAt: null
   };
-  stats.attempts += 1;
-  if (isCorrect) stats.correct += 1;
-  stats.lastPracticedAt = new Date().toISOString();
-  data.questionStats[levelId] = stats;
+  deviceStats.attempts += 1;
+  if (isCorrect) deviceStats.correct += 1;
+  deviceStats.lastPracticedAt = new Date().toISOString();
+  stats.byDevice[deviceId] = deviceStats;
+  data.questionStats[levelId] = normalizeQuestionStat(stats);
   writeAppData(data);
 }
 
@@ -1407,7 +1714,14 @@ function answerDrill(type, answer) {
   const correctName = current.name;
   const blackCorrectName = type === "black" ? (state.naming === "sharp" ? current.sharp : current.flat) : null;
   const isCorrect = answer === (blackCorrectName || correctName);
-  const levelId = type === "keyboard" ? "notes" : type === "black" ? "black-keys" : "staff-note";
+  const levelId =
+    type === "keyboard"
+      ? "notes"
+      : type === "black"
+        ? "black-keys"
+        : type === "staffLedger"
+          ? "staff-ledger"
+          : "staff-note";
   state.attempts += 1;
   state.lastAnswer = answer;
   recordQuestionAttempt(levelId, isCorrect);
@@ -1439,6 +1753,43 @@ function answerDrill(type, answer) {
   }, 420);
 }
 
+function answerChoiceDrill(levelId, answer) {
+  const level = getAllTheoryLevels().find(item => item.id === levelId);
+  if (!level) return;
+
+  const state = ensureChoiceQuestion(level);
+  const isCorrect = answer === state.question.answer;
+  upsertAppLearningRecord();
+  state.attempts += 1;
+  state.lastAnswer = answer;
+  state.status = isCorrect ? "correct" : "wrong";
+  state.feedback = `${isCorrect ? "答对了。" : "还不对。"}${state.question.explain}`;
+  recordQuestionAttempt(levelId, isCorrect);
+
+  if (isCorrect) {
+    state.correct += 1;
+    playTone(523.25, true);
+    if (state.correct >= 3) completeDrillLevel(levelId);
+    renderTheoryLevels();
+    setTimeout(() => {
+      state.question = null;
+      state.status = "idle";
+      state.lastAnswer = null;
+      state.feedback = "";
+      renderTheoryLevels();
+    }, 850);
+    return;
+  }
+
+  playTone(120, false);
+  renderTheoryLevels();
+  setTimeout(() => {
+    state.status = "idle";
+    state.lastAnswer = null;
+    renderTheoryLevels();
+  }, 520);
+}
+
 function switchBlackNaming(naming) {
   drillState.black.naming = naming;
   drillState.black.note = null;
@@ -1447,11 +1798,12 @@ function switchBlackNaming(naming) {
   renderTheoryLevels();
 }
 
-function switchStaffClef(clef) {
-  drillState.staff.clef = clef;
-  drillState.staff.note = null;
-  drillState.staff.status = "idle";
-  drillState.staff.lastAnswer = null;
+function switchStaffClef(clef, type = "staff") {
+  const state = drillState[type] || drillState.staff;
+  state.clef = clef;
+  state.note = null;
+  state.status = "idle";
+  state.lastAnswer = null;
   renderTheoryLevels();
 }
 
@@ -1511,10 +1863,10 @@ function renderScores() {
             hasScore
               ? `
                 <div class="score-views">
-                  ${showStaff ? `<section><h4>五线谱</h4>${scoreStaff(piece.notes)}</section>` : ""}
+                  ${showStaff ? `<section><h4>五线谱 + 简谱数字</h4>${scoreStaff(piece.notes)}</section>` : ""}
                   ${
                     showNumbered
-                      ? `<section><h4>简谱</h4><div class="numbered-score">${piece.numbered}</div></section>`
+                      ? `<section><h4>简谱文本</h4><div class="numbered-score">${piece.numbered}</div></section>`
                       : ""
                   }
                 </div>
@@ -1549,13 +1901,74 @@ function splitSourceText(text) {
 }
 
 function analyzeSource(text) {
-  const source = text.trim();
+  return analyzeImportedSource({ text });
+}
+
+function buildTrainingQuestions(source) {
+  const questions = [];
+  const has = pattern => pattern.test(source);
+
+  if (has(/五线谱|谱号|高音谱|低音谱|加线|线间/)) {
+    questions.push(
+      { prompt: "高音谱号第 2 线是什么音？", options: ["G", "F", "C"], answer: "G", explain: "高音谱号也叫 G 谱号，第 2 线是 G，也就是 sol。" },
+      { prompt: "高音谱号下加一线是什么？", options: ["中央 C", "高音 C", "低音 F"], answer: "中央 C", explain: "高音谱号下加一线是中央 C，是入门识谱的重要定位点。" }
+    );
+  }
+
+  if (has(/黑键|升号|降号|#|♯|b|♭/i)) {
+    questions.push(
+      { prompt: "C 右边的黑键可以叫什么？", options: ["C# / Db", "E# / Fb", "B# / Cb"], answer: "C# / Db", explain: "同一个黑键可按左边白键升高叫 C#，也可按右边白键降低叫 Db。" },
+      { prompt: "升号 # 的含义是什么？", options: ["升高半音", "降低半音", "延长一拍"], answer: "升高半音", explain: "升号表示把当前音升高半音。" }
+    );
+  }
+
+  if (has(/半音|全音/)) {
+    questions.push(
+      { prompt: "E 到 F 是什么距离？", options: ["半音", "全音", "八度"], answer: "半音", explain: "E 和 F 中间没有黑键，所以是半音。" },
+      { prompt: "两个半音组成什么？", options: ["全音", "四分音符", "和弦"], answer: "全音", explain: "两个连续半音就是一个全音。" }
+    );
+  }
+
+  if (has(/节拍|拍号|4\/4|节奏|时值|休止/)) {
+    questions.push(
+      { prompt: "4/4 拍通常一小节有几拍？", options: ["4 拍", "3 拍", "2 拍"], answer: "4 拍", explain: "4/4 拍的上方数字表示每小节 4 拍。" },
+      { prompt: "遇到休止符应该怎样？", options: ["不弹但继续数拍", "跳过这一拍", "马上加速"], answer: "不弹但继续数拍", explain: "休止符也是节奏的一部分，手不弹，心里仍要数拍。" }
+    );
+  }
+
+  if (has(/和弦|三和弦|135|1-3-5|C大|C 大/)) {
+    questions.push(
+      { prompt: "C 大三和弦是哪三个音？", options: ["C E G", "C D E", "D F A"], answer: "C E G", explain: "C 大三和弦由 1、3、5 级组成，也就是 C、E、G。" },
+      { prompt: "三和弦最基础的级数关系是？", options: ["1 3 5", "1 2 3", "2 4 6"], answer: "1 3 5", explain: "先按音阶的 1、3、5 构成三和弦理解。" }
+    );
+  }
+
+  if (has(/手型|指法|坐姿|放松|慢练|节拍器|分手|合手/)) {
+    questions.push(
+      { prompt: "新片段练不稳时，优先怎么做？", options: ["慢练小片段", "从头弹很快", "只看不弹"], answer: "慢练小片段", explain: "慢练和小片段循环更容易把动作固定下来。" },
+      { prompt: "合手前更稳的步骤是？", options: ["先分手练", "直接加速", "只练右手"], answer: "先分手练", explain: "分手稳定以后再用很慢速度合手。" }
+    );
+  }
+
+  if (!questions.length) {
+    questions.push(
+      { prompt: "只有链接时，下一步最有效的整理方式是什么？", options: ["补充字幕/截图/笔记", "直接背链接", "删除素材"], answer: "补充字幕/截图/笔记", explain: "纯前端网页无法直接读取小红书视频；补充可见文字后才能提取成具体乐理训练。" },
+      { prompt: "导入素材最终应该变成什么？", options: ["可练习的知识点", "只收藏链接", "一个空卡片"], answer: "可练习的知识点", explain: "琴习会把文字内容整理成知识点和小测题，方便反复练。" }
+    );
+  }
+
+  return questions.slice(0, 5);
+}
+
+function analyzeImportedSource({ text = "", title = "", url = "" }) {
+  const source = [title, text, url].filter(Boolean).join("\n").trim();
   if (!source) {
     return {
       type: "待自动解析",
       theory: ["已保存链接。等接入视频读取、转写或你补充文字后，再提取乐理知识点。"],
       practice: ["可以先收藏这条素材，练琴前打开原链接观看。"],
-      scoreDraft: "只有链接时无法判断是否包含琴谱。后续可接入视频转写、截图识别或手动补充。"
+      scoreDraft: "只有链接时无法判断是否包含琴谱。后续可接入视频转写、截图识别或手动补充。",
+      training: buildTrainingQuestions("")
     };
   }
 
@@ -1563,7 +1976,7 @@ function analyzeSource(text) {
   const lower = source.toLowerCase();
   const hasTheory = /五线谱|简谱|音阶|和弦|节拍|拍号|调号|升号|降号|半音|全音|谱号|音符/.test(source);
   const hasPractice = /手型|坐姿|放松|节拍器|慢练|双手|左手|右手|指法|练习|速度|错音/.test(source);
-  const hasScore = /[1-7][#b]?|c|d|e|f|g|a|b|am|em|dm|和弦|旋律|谱/.test(lower);
+  const hasScore = /(^|[\s,，|:：])([1-7][#b]?|[a-g](#|b)?m?)(?=$|[\s,，|:：])|和弦|旋律|谱/.test(lower);
 
   return {
     type: hasScore ? "可能包含琴谱/和弦" : hasPractice ? "练琴技巧" : hasTheory ? "乐理知识" : "待整理素材",
@@ -1575,7 +1988,8 @@ function analyzeSource(text) {
       : ["看完后用 10 分钟慢练验证，记录是否真的有效。"],
     scoreDraft: hasScore
       ? "检测到可能的音名、简谱数字、和弦或谱相关内容。建议下一步做“琴谱识别/手动校对”入口。"
-      : "暂未检测到明显琴谱信息。"
+      : "暂未检测到明显琴谱信息。",
+    training: buildTrainingQuestions(source)
   };
 }
 
@@ -1588,6 +2002,27 @@ function titleFromUrl(url) {
   } catch {
     return "小红书素材";
   }
+}
+
+function buildImportedTheoryLevels() {
+  return readImports()
+    .filter(item => item.analysis?.training?.length)
+    .slice(0, 8)
+    .map(item => ({
+      id: `import-${item.id || item.createdAt}`,
+      group: "导入",
+      title: item.title,
+      summary: `来自导入素材：${item.analysis.type}。先用这些题把内容变成可练的知识点。`,
+      contents: ["素材重点", "小测题", "回到原链接复习"],
+      visual: noteMapVisual(),
+      points: [
+        item.analysis.theory?.[0] || "先补充字幕、截图或你的笔记，再提取更准确的知识点。",
+        item.analysis.practice?.[0] || "练琴前打开原链接回看关键动作。",
+        "答题统计会和其他课时一起同步。"
+      ],
+      drill: "choice",
+      questions: item.analysis.training
+    }));
 }
 
 function renderImports() {
@@ -1620,6 +2055,11 @@ function renderImports() {
           <div class="import-panel">
             <strong>琴谱草稿</strong>
             <p>${item.analysis.scoreDraft}</p>
+          </div>
+          <div class="import-panel">
+            <strong>已生成练习</strong>
+            <ul>${(item.analysis.training || []).map(question => `<li>${question.prompt}</li>`).join("")}</ul>
+            <p>这些题会出现在学习页的“导入”关卡里。</p>
           </div>
         </article>
       `
@@ -1724,13 +2164,30 @@ function setupEvents() {
   });
 
   els.theoryLevels.addEventListener("click", event => {
+    const resetButton = event.target.closest("[data-reset-learning]");
+    if (resetButton) {
+      resetLearningProgress();
+      return;
+    }
+
     const button = event.target.closest("[data-level-id]");
     if (!button) return;
     activeTheoryLevelId = button.dataset.levelId;
     renderTheoryLevels();
+    if (window.matchMedia("(max-width: 820px)").matches) {
+      window.setTimeout(() => {
+        els.theoryLevelDetail.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
   });
 
   els.theoryLevelDetail.addEventListener("click", event => {
+    const choiceButton = event.target.closest("[data-choice-answer]");
+    if (choiceButton) {
+      answerChoiceDrill(choiceButton.dataset.choiceLevel, choiceButton.dataset.choiceAnswer);
+      return;
+    }
+
     const drillButton = event.target.closest("[data-drill-answer]");
     if (drillButton) {
       answerDrill(drillButton.dataset.drillType, drillButton.dataset.drillAnswer);
@@ -1739,7 +2196,7 @@ function setupEvents() {
 
     const clefButton = event.target.closest("[data-clef]");
     if (clefButton) {
-      switchStaffClef(clefButton.dataset.clef);
+      switchStaffClef(clefButton.dataset.clef, clefButton.dataset.clefDrill);
       return;
     }
 
@@ -1795,13 +2252,16 @@ function setupEvents() {
     const text = els.sourceText.value.trim();
     const url = els.sourceUrl.value.trim();
     const title = els.sourceTitle.value.trim() || titleFromUrl(url);
+    const createdAt = new Date().toISOString();
     const item = {
+      id: `import-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       url,
       title,
       text,
       date: todayISO(),
-      createdAt: new Date().toISOString(),
-      analysis: analyzeSource(text)
+      createdAt,
+      updatedAt: createdAt,
+      analysis: analyzeImportedSource({ text, title, url })
     };
     const items = readImports();
     items.unshift(item);
@@ -1809,6 +2269,7 @@ function setupEvents() {
     els.importMessage.textContent = text ? "已整理并保存在本机。" : "已保存链接，等待后续解析。";
     els.importForm.reset();
     renderImports();
+    renderTheoryLevels();
   });
 
   els.syncForm.addEventListener("submit", async event => {
