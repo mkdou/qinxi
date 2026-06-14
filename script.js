@@ -7,6 +7,7 @@ const supabaseUrl = "https://rwrqumnbgxcqonpvfxqj.supabase.co";
 const supabasePublishableKey = "sb_publishable_sStbbTzJvM_7ehaSUJBN9A_GJcG90Ee";
 const cloudDataTable = "qinxi_user_data";
 const pendingSyncEmailKey = "qinxi_pending_sync_email";
+const importAnalyzerEndpoint = `${supabaseUrl}/functions/v1/analyze-import`;
 
 let supabaseClient = null;
 let currentUser = null;
@@ -2065,6 +2066,50 @@ function analyzeImportedSource({ text = "", title = "", url = "" }) {
   };
 }
 
+function normalizeImportAnalysis(analysis, fallbackSource) {
+  const local = analyzeImportedSource(fallbackSource);
+  return {
+    type: analysis?.type || local.type,
+    theory: Array.isArray(analysis?.theory) && analysis.theory.length ? analysis.theory.slice(0, 6) : local.theory,
+    practice: Array.isArray(analysis?.practice) && analysis.practice.length ? analysis.practice.slice(0, 6) : local.practice,
+    scoreDraft: analysis?.scoreDraft || local.scoreDraft,
+    training:
+      Array.isArray(analysis?.training) && analysis.training.length
+        ? analysis.training
+            .filter(question => question?.prompt && Array.isArray(question.options) && question.answer)
+            .slice(0, 8)
+        : local.training
+  };
+}
+
+async function requestBackendImportAnalysis(payload) {
+  const client = getSupabaseClient();
+  const headers = {
+    "Content-Type": "application/json",
+    apikey: supabasePublishableKey
+  };
+  if (client) {
+    const { data } = await client.auth.getSession();
+    if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
+  }
+
+  const response = await withTimeout(
+    fetch(importAnalyzerEndpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload)
+    }),
+    60000,
+    "后端解析超时，已改用本地解析。"
+  );
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(detail || `后端解析失败：HTTP ${response.status}`);
+  }
+  const result = await response.json();
+  return normalizeImportAnalysis(result.analysis || result, payload);
+}
+
 function titleFromUrl(url) {
   try {
     const parsed = new URL(url);
@@ -2359,7 +2404,24 @@ function setupEvents() {
     const url = els.sourceUrl.value.trim();
     const title = els.sourceTitle.value.trim() || titleFromUrl(url);
     const createdAt = new Date().toISOString();
+    els.importMessage.textContent = "正在解析素材...";
     const image = await readImageAttachment(els.sourceImage?.files?.[0]);
+    const analysisPayload = {
+      url,
+      title,
+      text: [text, image?.name ? `图片素材：${image.name}` : ""].filter(Boolean).join("\n"),
+      image: image?.dataUrl ? { name: image.name, type: image.type, dataUrl: image.dataUrl } : null,
+      requestedSource: "xiaohongshu"
+    };
+    let analysis;
+    let usedBackend = false;
+    try {
+      analysis = await requestBackendImportAnalysis(analysisPayload);
+      usedBackend = true;
+    } catch (error) {
+      console.warn(error);
+      analysis = normalizeImportAnalysis(null, analysisPayload);
+    }
     const item = {
       id: `import-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       url,
@@ -2369,16 +2431,18 @@ function setupEvents() {
       date: todayISO(),
       createdAt,
       updatedAt: createdAt,
-      analysis: analyzeImportedSource({
-        text: [text, image?.name ? `图片素材：${image.name}` : ""].filter(Boolean).join("\n"),
-        title,
-        url
-      })
+      analysis,
+      backend: {
+        used: usedBackend,
+        endpoint: usedBackend ? importAnalyzerEndpoint : ""
+      }
     };
     const items = readImports();
     items.unshift(item);
     writeImports(items);
-    els.importMessage.textContent = text ? "已整理并保存在本机。" : "已保存链接，等待后续解析。";
+    els.importMessage.textContent = usedBackend
+      ? "后端已解析，并生成学习训练。"
+      : "后端暂不可用，已用本地规则生成训练。";
     els.importForm.reset();
     renderImports();
     renderTheoryLevels();
