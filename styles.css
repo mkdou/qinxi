@@ -401,6 +401,95 @@ button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.theory-category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 18px;
+}
+
+.theory-category-card {
+  display: grid;
+  min-height: 328px;
+  align-content: space-between;
+  gap: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(123, 105, 79, 0.14);
+  border-radius: 8px;
+  padding: 22px 22px 16px;
+  background: rgba(255, 253, 248, 0.92);
+  color: var(--ink);
+  text-align: left;
+  box-shadow: var(--shadow);
+}
+
+.theory-category-card:hover,
+.theory-category-card.active {
+  border-color: rgba(46, 95, 77, 0.32);
+  background: #fffdf8;
+}
+
+.category-kicker {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.theory-category-card h3 {
+  margin: 18px 0 10px;
+  font-size: 30px;
+}
+
+.theory-category-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.theory-category-card > strong {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 32px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--accent);
+  color: #fffdf8;
+  font-size: 13px;
+}
+
+.category-visual {
+  min-height: 122px;
+  margin: 0 -22px;
+}
+
+.category-visual .visual-card {
+  min-height: 122px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.category-visual .visual-card svg {
+  max-width: none;
+}
+
+.category-visual .note-map,
+.category-visual .beat-row,
+.category-visual .chord-card,
+.category-visual .key-card {
+  padding-right: 22px;
+  padding-left: 22px;
+}
+
 .practice-item {
   padding: 20px;
 }
@@ -1438,6 +1527,30 @@ button {
   .sync-form .primary-action,
   .sync-actions button {
     width: 100%;
+  }
+
+  .theory-category-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .theory-category-card {
+    min-height: 288px;
+    padding: 18px 18px 14px;
+  }
+
+  .theory-category-card h3 {
+    margin-top: 14px;
+    font-size: 26px;
+  }
+
+  .theory-category-card p {
+    font-size: 15px;
+  }
+
+  .category-visual {
+    margin-right: -18px;
+    margin-left: -18px;
   }
 
   .level-list {

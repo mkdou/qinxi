@@ -18,7 +18,7 @@ let cloudPullTimer = null;
 const theoryLevels = [
   {
     id: "notes",
-    group: "Pitch",
+    group: "音符",
     title: "识别音符在钢琴上的位置",
     summary: "看钢琴键上的红点，判断它是 C 到 B 里的哪个音。答对会变绿并发出对应音高。",
     contents: ["白键 C 到 B", "音名和简谱", "键盘位置"],
@@ -28,7 +28,7 @@ const theoryLevels = [
   },
   {
     id: "black-keys",
-    group: "Pitch",
+    group: "音符",
     title: "识别黑键升降音",
     summary: "黑键有两种常见叫法：可以按左边白键升高命名，也可以按右边白键降低命名。",
     contents: ["升号 #", "降号 b", "同一个黑键的两种名字"],
@@ -38,7 +38,7 @@ const theoryLevels = [
   },
   {
     id: "staff-note",
-    group: "Notation",
+    group: "读谱",
     title: "识别五线谱上的音",
     summary: "在高音谱号或低音谱号里随机出现一个音符，选择正确的音名和简谱音级。",
     contents: ["高音谱号", "低音谱号", "简谱高低音点"],
@@ -48,7 +48,7 @@ const theoryLevels = [
   },
   {
     id: "staff-ledger",
-    group: "Notation",
+    group: "读谱",
     title: "上加线和下加线",
     summary: "专门练五线谱范围外的音：高音谱号下加一线中央 C、上加线高音，以及低音谱号上下加线。",
     contents: ["下加线", "上加线", "谱表外音"],
@@ -58,7 +58,7 @@ const theoryLevels = [
   },
   {
     id: "steps",
-    group: "Pitch",
+    group: "音程",
     title: "半音和全音",
     summary: "理解相邻琴键的距离，是以后看升降号、音阶和和弦的基础。",
     contents: ["半音", "全音", "升号和降号"],
@@ -73,7 +73,7 @@ const theoryLevels = [
   },
   {
     id: "clefs",
-    group: "Notation",
+    group: "调号",
     title: "高音谱号和低音谱号",
     summary: "钢琴常用大谱表：右手多看高音谱号，左手多看低音谱号。",
     contents: ["高音谱号", "低音谱号", "左右手音区"],
@@ -88,7 +88,7 @@ const theoryLevels = [
   },
   {
     id: "rhythm",
-    group: "Rhythm",
+    group: "节奏",
     title: "节拍和拍号",
     summary: "节拍决定音乐怎么走路。先数稳，再弹准。",
     contents: ["小节", "4/4 拍", "强弱规律"],
@@ -103,7 +103,7 @@ const theoryLevels = [
   },
   {
     id: "duration",
-    group: "Rhythm",
+    group: "节奏",
     title: "音符时值",
     summary: "音符不只告诉你弹哪个音，也告诉你弹多久。",
     contents: ["全音符", "二分音符", "四分音符", "八分音符"],
@@ -117,18 +117,63 @@ const theoryLevels = [
     ]
   },
   {
+    id: "intervals",
+    group: "音程",
+    title: "识别常见音程",
+    summary: "音程就是两个音之间的距离。会听、会看、会数音程，后面学和弦会轻松很多。",
+    contents: ["二度", "三度", "五度", "八度"],
+    visual: staffVisual("常见音程：二度、三度、五度", ["C4", "D4", "E4", "G4"]),
+    points: ["相邻音级是二度，例如 C 到 D", "隔一个音级常见为三度，例如 C 到 E", "C 到 G 是五度，很多和弦和伴奏都会用到"],
+    drill: "choice",
+    questions: [
+      { prompt: "C 到 E 在入门里先按几度理解？", options: ["三度", "二度", "八度"], answer: "三度", explain: "从 C 数到 E：C 是 1，D 是 2，E 是 3，所以是三度。" },
+      { prompt: "C 到 G 是几度？", options: ["五度", "三度", "二度"], answer: "五度", explain: "C-D-E-F-G 数到 G 是第五个音级。" },
+      { prompt: "同名音从 C 到高一个 C 叫什么？", options: ["八度", "五度", "半音"], answer: "八度", explain: "同名音高一组，常称为八度。" }
+    ]
+  },
+  {
+    id: "scales",
+    group: "音阶",
+    title: "认识大调音阶",
+    summary: "音阶是一串有规律的音。先从 C 大调开始，再理解为什么别的调需要升降号。",
+    contents: ["C 大调", "全全半全全全半", "上行和下行"],
+    visual: staffVisual("C 大调音阶", ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"]),
+    points: ["C 大调从 C 到下一个 C，全用白键", "大调音阶的距离规律是全全半全全全半", "练音阶要慢、均匀、手指提前准备"],
+    drill: "choice",
+    questions: [
+      { prompt: "C 大调音阶主要使用哪些琴键？", options: ["白键", "黑键", "只用 C 和 G"], answer: "白键", explain: "C 大调没有升降号，入门时先用白键建立音阶感觉。" },
+      { prompt: "大调音阶的核心规律是什么？", options: ["全全半全全全半", "半半全半半全半", "全半全半全半全"], answer: "全全半全全全半", explain: "这是大调音阶最重要的距离规律。" },
+      { prompt: "练音阶最先追求什么？", options: ["均匀稳定", "越快越好", "只弹右手"], answer: "均匀稳定", explain: "速度以后再加，先让每个音的时值和力度稳定。" }
+    ]
+  },
+  {
+    id: "key-signatures",
+    group: "调号",
+    title: "认识调号和升降号",
+    summary: "调号写在谱号后面，告诉你这首曲子默认哪些音要升高或降低。",
+    contents: ["C 大调", "G 大调 F#", "F 大调 Bb"],
+    visual: keySignatureVisual(),
+    points: ["C 大调没有升降号", "G 大调常见一个升号：F#", "F 大调常见一个降号：Bb"],
+    drill: "choice",
+    questions: [
+      { prompt: "C 大调调号有什么升降号？", options: ["没有", "一个升号", "一个降号"], answer: "没有", explain: "C 大调是入门最常见的无升降号调。" },
+      { prompt: "G 大调常见的一个升号是什么？", options: ["F#", "Bb", "C#"], answer: "F#", explain: "G 大调调号里通常有 F#。" },
+      { prompt: "调号通常写在哪里？", options: ["谱号后面", "每个音符下面", "小节线中间"], answer: "谱号后面", explain: "调号写在谱号后面，影响整段音乐里对应的音。" }
+    ]
+  },
+  {
     id: "chords",
-    group: "Structure",
-    title: "音阶和三和弦",
+    group: "和弦",
+    title: "认识三和弦",
     summary: "很多歌曲不是只靠单音旋律，也靠和弦支撑情绪。",
-    contents: ["C 大调音阶", "1-3-5", "三和弦"],
+    contents: ["1-3-5", "大三和弦", "分解和弦"],
     visual: chordVisual(),
-    points: ["C 大调音阶全用白键", "三和弦通常取音阶里的 1、3、5", "C 大三和弦由 C、E、G 组成"],
+    points: ["三和弦通常取音阶里的 1、3、5", "C 大三和弦由 C、E、G 组成", "可以同时弹，也可以分解成一个个音弹"],
     drill: "choice",
     questions: [
       { prompt: "C 大三和弦由哪三个音组成？", options: ["C E G", "C D E", "D F A"], answer: "C E G", explain: "C 大三和弦取 C 大调里的 1、3、5，也就是 C、E、G。" },
       { prompt: "三和弦常取音阶里的哪几个级数？", options: ["1 3 5", "1 2 3", "2 4 6"], answer: "1 3 5", explain: "最基础的三和弦先按 1、3、5 理解。" },
-      { prompt: "C 大调音阶主要用哪些琴键？", options: ["白键", "黑键", "只用 C"], answer: "白键", explain: "C 大调没有升降号，先从白键练起。" }
+      { prompt: "分解和弦是什么意思？", options: ["把和弦音一个个弹", "只弹最低音", "把节奏删掉"], answer: "把和弦音一个个弹", explain: "C-E-G 可以一起弹，也可以按顺序分解弹。" }
     ]
   }
 ];
@@ -465,21 +510,76 @@ let appLearningSeconds = 0;
 let appLearningLastSavedMinute = 0;
 
 const levelShortTitles = {
-  notes: "Natural Notes",
-  "black-keys": "Black Keys",
-  "staff-note": "Staff Notes",
-  "staff-ledger": "Ledger Lines",
-  steps: "Half / Whole",
-  clefs: "Clefs",
-  rhythm: "Rhythm",
-  duration: "Durations",
-  chords: "Chords"
+  notes: "自然音",
+  "black-keys": "黑键音",
+  "staff-note": "五线谱音符",
+  "staff-ledger": "加线音",
+  steps: "半音和全音",
+  intervals: "常见音程",
+  clefs: "谱号",
+  rhythm: "节拍",
+  duration: "音符时值",
+  scales: "大调音阶",
+  "key-signatures": "调号",
+  chords: "三和弦"
 };
+
+const theoryCategories = [
+  {
+    id: "notes",
+    title: "音符",
+    summary: "读懂音名、键盘位置和五线谱位置，先把“弹哪个音”练稳。",
+    action: "从自然音开始",
+    levelIds: ["notes", "black-keys", "staff-note", "staff-ledger"],
+    visual: staffVisual("音符：键盘和谱面坐标", ["C4", "E4", "G4"])
+  },
+  {
+    id: "rhythms",
+    title: "节奏",
+    summary: "理解拍号、时值和休止，先能稳定数拍，再把节奏弹准。",
+    action: "练节拍和时值",
+    levelIds: ["rhythm", "duration"],
+    visual: rhythmVisual(["1", "2", "3", "4"], "一小节里稳定数拍")
+  },
+  {
+    id: "intervals",
+    title: "音程",
+    summary: "学会判断两个音之间的距离，为听音、和弦和旋律分析打底。",
+    action: "认识音程距离",
+    levelIds: ["steps", "intervals"],
+    visual: staffVisual("音程：从距离开始理解", ["C4", "D4", "E4", "G4"])
+  },
+  {
+    id: "chords",
+    title: "和弦",
+    summary: "从 1-3-5 的三和弦开始，理解歌曲背后的和声支撑。",
+    action: "练三和弦",
+    levelIds: ["chords"],
+    visual: chordVisual()
+  },
+  {
+    id: "scales",
+    title: "音阶",
+    summary: "从 C 大调到大调规律，建立手指、耳朵和谱面的共同路线。",
+    action: "认识大调音阶",
+    levelIds: ["scales"],
+    visual: staffVisual("音阶：C 到下一个 C", ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"])
+  },
+  {
+    id: "key-signatures",
+    title: "调号",
+    summary: "看懂谱号后的升降号，知道一首曲子默认哪些音会变化。",
+    action: "看懂调号",
+    levelIds: ["key-signatures", "clefs"],
+    visual: keySignatureVisual()
+  }
+];
 
 const els = {
   tabButtons: [...document.querySelectorAll("[data-tab]")],
   panels: [...document.querySelectorAll(".tab-panel")],
   theoryLevels: document.querySelector("#theoryLevels"),
+  theoryCategories: document.querySelector("#theoryCategories"),
   theoryLevelDetail: document.querySelector("#theoryLevelDetail"),
   practiceLessons: document.querySelector("#practiceLessons"),
   theoryResources: document.querySelector("#theoryResources"),
@@ -1658,6 +1758,31 @@ function renderLessons() {
   renderResources();
 }
 
+function renderTheoryCategories(allLevels, progress) {
+  if (!els.theoryCategories) return;
+  const levelMap = new Map(allLevels.map(level => [level.id, level]));
+  const activeCategory =
+    theoryCategories.find(category => category.levelIds.includes(activeTheoryLevelId)) || theoryCategories[0];
+
+  els.theoryCategories.innerHTML = theoryCategories
+    .map(category => {
+      const levels = category.levelIds.map(id => levelMap.get(id)).filter(Boolean);
+      const completed = levels.filter(level => progress[level.id]).length;
+      return `
+        <button class="theory-category-card ${category.id === activeCategory.id ? "active" : ""}" type="button" data-theory-category="${category.id}">
+          <div>
+            <span class="category-kicker">${completed}/${levels.length} 已掌握</span>
+            <h3>${category.title}</h3>
+            <p>${category.summary}</p>
+          </div>
+          <div class="category-visual" aria-hidden="true">${category.visual}</div>
+          <strong>${category.action}</strong>
+        </button>
+      `;
+    })
+    .join("");
+}
+
 function renderTheoryLevels() {
   const allLevels = getAllTheoryLevels();
   const progress = readTheoryProgress();
@@ -1665,6 +1790,7 @@ function renderTheoryLevels() {
   const completed = Object.entries(progress).filter(([levelId, done]) => done && allLevelIds.has(levelId)).length;
   const activeLevel = allLevels.find(level => level.id === activeTheoryLevelId) || allLevels[0];
   const activeStats = getDisplayLevelStats(activeLevel.id);
+  renderTheoryCategories(allLevels, progress);
 
   els.theoryLevels.innerHTML = `
     <div class="level-progress">
@@ -2447,6 +2573,16 @@ function setupEvents() {
         els.theoryLevelDetail.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 50);
     }
+  });
+
+  els.theoryCategories?.addEventListener("click", event => {
+    const card = event.target.closest("[data-theory-category]");
+    if (!card) return;
+    const category = theoryCategories.find(item => item.id === card.dataset.theoryCategory);
+    if (!category) return;
+    activeTheoryLevelId = category.levelIds[0];
+    renderTheoryLevels();
+    document.querySelector("#learning-drills")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   els.theoryLevelDetail.addEventListener("click", event => {

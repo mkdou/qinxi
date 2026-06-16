@@ -1,4 +1,4 @@
-const cacheName = "qinxi-v16";
+const cacheName = "qinxi-v17";
 const files = [
   "./",
   "./index.html",
