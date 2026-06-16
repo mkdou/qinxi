@@ -193,8 +193,8 @@ const staffDrillNotes = {
     { name: "A", octave: 5, step: 10, ledger: "above" }
   ],
   bass: [
-    { name: "E", octave: 2, step: -4, ledger: "below" },
-    { name: "F", octave: 2, step: -3 },
+    { name: "E", octave: 2, step: -2, ledger: "below" },
+    { name: "F", octave: 2, step: -1 },
     { name: "G", octave: 2, step: 0 },
     { name: "A", octave: 2, step: 1 },
     { name: "B", octave: 2, step: 2 },
@@ -218,8 +218,10 @@ const staffLedgerDrillNotes = {
     { name: "C", octave: 6, step: 12, ledger: "above" }
   ],
   bass: [
-    { name: "E", octave: 2, step: -4, ledger: "below" },
-    { name: "F", octave: 2, step: -3, ledger: "below" },
+    { name: "C", octave: 2, step: -4, ledger: "below" },
+    { name: "D", octave: 2, step: -3, ledger: "below" },
+    { name: "E", octave: 2, step: -2, ledger: "below" },
+    { name: "F", octave: 2, step: -1, ledger: "below" },
     { name: "C", octave: 4, step: 10, ledger: "above" },
     { name: "D", octave: 4, step: 11, ledger: "above" },
     { name: "E", octave: 4, step: 12, ledger: "above" }
