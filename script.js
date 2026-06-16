@@ -1308,6 +1308,40 @@ function getPersistedLevelStats(levelId, fallback = { attempts: 0, correct: 0 })
   return fallback;
 }
 
+function getDisplayLevelStats(levelId) {
+  const ids = relatedLevelStatIds(levelId);
+  if (ids.length === 1) return getPersistedLevelStats(levelId);
+  return ids
+    .filter(id => id !== levelId)
+    .map(id => getPersistedLevelStats(id))
+    .reduce(
+      (sum, stat) => ({
+        attempts: sum.attempts + (Number(stat.attempts) || 0),
+        correct: sum.correct + (Number(stat.correct) || 0)
+      }),
+      { attempts: 0, correct: 0 }
+    );
+}
+
+function staffStatsId(type, clef) {
+  const base = type === "staffLedger" ? "staff-ledger" : "staff-note";
+  return `${base}-${clef}`;
+}
+
+function relatedLevelStatIds(levelId) {
+  if (levelId === "staff-note") return ["staff-note", "staff-note-treble", "staff-note-bass"];
+  if (levelId === "staff-ledger") return ["staff-ledger", "staff-ledger-treble", "staff-ledger-bass"];
+  return [levelId];
+}
+
+function updateStaffCompletion(baseLevelId) {
+  const trebleStats = getPersistedLevelStats(`${baseLevelId}-treble`);
+  const bassStats = getPersistedLevelStats(`${baseLevelId}-bass`);
+  if (trebleStats.correct >= 5 && bassStats.correct >= 5) {
+    completeDrillLevel(baseLevelId);
+  }
+}
+
 function noteFrequency(note) {
   const info = note.semitone === undefined ? noteOptions.find(item => item.name === note.name) : note;
   const midi = 12 * (note.octave + 1) + info.semitone;
@@ -1418,6 +1452,12 @@ function renderBlackKeyDrill() {
   const keyWidth = 40;
   const keyboardWidth = pianoWhiteKeys.length * keyWidth;
   const correctName = state.naming === "sharp" ? state.note.sharp : state.note.flat;
+  const feedback =
+    state.status === "correct"
+      ? `答对了：这个黑键是 ${correctName}。`
+      : state.status === "wrong"
+        ? `还不对，正确答案是 ${correctName}。`
+        : `当前按${state.naming === "sharp" ? "升号" : "降号"}命名，选择红点所在黑键的音名。`;
   const options =
     state.naming === "sharp"
       ? ["C#", "D#", "F#", "G#", "A#"]
@@ -1469,7 +1509,7 @@ function renderBlackKeyDrill() {
           })
           .join("")}
       </div>
-      <p class="drill-hint">当前按${state.naming === "sharp" ? "升号" : "降号"}命名。这个键也可以叫 ${state.note.sharp} / ${state.note.flat}。</p>
+      <p class="drill-hint">${feedback}</p>
     </section>
   `;
 }
@@ -1477,12 +1517,17 @@ function renderBlackKeyDrill() {
 function renderStaffDrill(type = "staff") {
   ensureDrillQuestion(type);
   const state = drillState[type];
-  const levelId = type === "staffLedger" ? "staff-ledger" : "staff-note";
-  const stats = getPersistedLevelStats(levelId, state);
+  const levelId = staffStatsId(type, state.clef);
+  const stats = getPersistedLevelStats(levelId);
   const note = state.note;
   const noteInfo = noteOptions.find(item => item.name === note.name);
   const clefLabel = state.clef === "treble" ? "高音谱号" : "低音谱号";
-  const octaveMark = note.octave >= 5 ? "上方一点" : note.octave <= 3 ? "下方一点" : "无点";
+  const feedback =
+    state.status === "correct"
+      ? `答对了：${note.name}${note.octave}，简谱 ${noteInfo.numbered}。`
+      : state.status === "wrong"
+        ? `还不对，正确答案是 ${note.name}${note.octave}。`
+        : "选择这个音符对应的音名。答题前不显示答案。";
   const bottomLineY = 124;
   const stepGap = 10;
   const noteY = bottomLineY - note.step * stepGap;
@@ -1537,7 +1582,7 @@ function renderStaffDrill(type = "staff") {
           )
           .join("")}
       </div>
-      <p class="drill-hint">当前是${clefLabel}，答对后会播放 ${note.name}${note.octave}。简谱为 ${noteInfo.numbered}，音区标记：${octaveMark}。</p>
+      <p class="drill-hint">${feedback}</p>
     </section>
   `;
 }
@@ -1613,7 +1658,7 @@ function renderTheoryLevels() {
   const allLevelIds = new Set(allLevels.map(level => level.id));
   const completed = Object.entries(progress).filter(([levelId, done]) => done && allLevelIds.has(levelId)).length;
   const activeLevel = allLevels.find(level => level.id === activeTheoryLevelId) || allLevels[0];
-  const activeStats = getPersistedLevelStats(activeLevel.id);
+  const activeStats = getDisplayLevelStats(activeLevel.id);
 
   els.theoryLevels.innerHTML = `
     <div class="level-progress">
@@ -1626,7 +1671,7 @@ function renderTheoryLevels() {
     ${allLevels
       .map(
         (level, index) => {
-          const stats = getPersistedLevelStats(level.id);
+          const stats = getDisplayLevelStats(level.id);
           return `
           <button class="level-button ${level.id === activeLevel.id ? "active" : ""}" data-level-id="${level.id}">
             <span>${String(index + 1).padStart(2, "0")}</span>
@@ -1742,13 +1787,15 @@ function resetLevelProgress(levelId) {
   if (!confirmed) return;
 
   const data = readAppData();
-  delete data.lessonProgress[levelId];
-  delete data.questionStats[levelId];
+  relatedLevelStatIds(levelId).forEach(statId => {
+    delete data.lessonProgress[statId];
+    delete data.questionStats[statId];
+  });
   data.sync = {
     ...(data.sync || {}),
     levelResetAt: {
       ...(data.sync?.levelResetAt || {}),
-      [levelId]: new Date().toISOString()
+      ...Object.fromEntries(relatedLevelStatIds(levelId).map(statId => [statId, new Date().toISOString()]))
     }
   };
   writeAppData(data);
@@ -1794,9 +1841,9 @@ function answerDrill(type, answer) {
       ? "notes"
       : type === "black"
         ? "black-keys"
-        : type === "staffLedger"
-          ? "staff-ledger"
-          : "staff-note";
+        : staffStatsId(type, state.clef);
+  const baseStaffLevelId =
+    type === "staffLedger" ? "staff-ledger" : type === "staff" ? "staff-note" : "";
   state.attempts += 1;
   state.lastAnswer = answer;
   recordQuestionAttempt(levelId, isCorrect);
@@ -1805,7 +1852,9 @@ function answerDrill(type, answer) {
     state.correct += 1;
     state.status = "correct";
     playTone(noteFrequency(current), true);
-    if (state.correct >= 5) {
+    if (baseStaffLevelId) {
+      updateStaffCompletion(baseStaffLevelId);
+    } else if (state.correct >= 5) {
       completeDrillLevel(levelId);
     }
     renderTheoryLevels();
