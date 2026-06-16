@@ -539,6 +539,14 @@ button {
   line-height: 1.7;
 }
 
+.level-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .compact-reset {
   flex: 0 0 auto;
   min-height: 34px;
@@ -1466,6 +1474,10 @@ button {
 
   .level-card-head {
     display: grid;
+  }
+
+  .level-actions {
+    justify-content: flex-start;
   }
 
   .level-card-head h3 {

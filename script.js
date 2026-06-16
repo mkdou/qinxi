@@ -1302,6 +1302,12 @@ function getAccuracy(state) {
   return `${Math.round((state.correct / state.attempts) * 100)}%（${state.correct}/${state.attempts}）`;
 }
 
+function getStatSummary(state) {
+  const attempts = Number(state?.attempts) || 0;
+  const correct = Number(state?.correct) || 0;
+  return `${correct}/${attempts}`;
+}
+
 function getPersistedLevelStats(levelId, fallback = { attempts: 0, correct: 0 }) {
   const stat = normalizeQuestionStat(readAppData().questionStats?.[levelId]);
   if (stat.attempts) return stat;
@@ -1695,7 +1701,10 @@ function renderTheoryLevels() {
           <h3>${activeLevel.title}</h3>
           <p>${activeStats.attempts ? `当前统计：${getAccuracy(activeStats)}` : activeLevel.summary}</p>
         </div>
-        <button class="ghost-action compact-reset" type="button" data-reset-level="${activeLevel.id}">重置本课</button>
+        <div class="level-actions">
+          <button class="ghost-action compact-reset" type="button" data-repair-level="${activeLevel.id}">修正统计</button>
+          <button class="ghost-action compact-reset" type="button" data-reset-level="${activeLevel.id}">重置本课</button>
+        </div>
       </div>
       ${activeLevel.drill ? "" : activeLevel.visual}
       <details class="level-notes">
@@ -1810,6 +1819,67 @@ function resetLevelProgress(levelId) {
   setSyncStatus(`已重置“${level.title}”，稍后会自动同步到云端。`);
 }
 
+function repairLevelStats(levelId) {
+  const level = getAllTheoryLevels().find(item => item.id === levelId);
+  if (!level) return;
+
+  const relatedStatIds = relatedLevelStatIds(levelId);
+  if (relatedStatIds.length !== 1) {
+    window.alert("这一课拆分了多个练习统计，请分别进入具体练习后修正。");
+    return;
+  }
+
+  const statId = relatedStatIds[0];
+  const currentStats = getPersistedLevelStats(statId);
+  const input = window.prompt(
+    `把“${level.title}”的统计修正为多少？\n格式：正确数/总题数，例如 ${getStatSummary(currentStats) || "520/560"}`,
+    getStatSummary(currentStats)
+  );
+  if (input === null) return;
+
+  const match = input.trim().match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (!match) {
+    window.alert("格式不对，请输入类似 520/560 的数字。");
+    return;
+  }
+
+  const correct = Number(match[1]);
+  const attempts = Number(match[2]);
+  if (!Number.isInteger(correct) || !Number.isInteger(attempts) || attempts < 0 || correct < 0 || correct > attempts) {
+    window.alert("数字不合理：正确数不能大于总题数。");
+    return;
+  }
+
+  const data = readAppData();
+  const deviceId = getDeviceId(data);
+  const now = new Date().toISOString();
+  const resetAt = new Date(Date.now() - 1000).toISOString();
+  data.questionStats[statId] = normalizeQuestionStat(
+    {
+      byDevice: {
+        [deviceId]: {
+          attempts,
+          correct,
+          lastPracticedAt: now
+        }
+      }
+    },
+    deviceId
+  );
+  data.sync = {
+    ...(data.sync || {}),
+    levelResetAt: {
+      ...(data.sync?.levelResetAt || {}),
+      [statId]: resetAt
+    }
+  };
+  if (correct >= 5) data.lessonProgress[statId] = true;
+  else delete data.lessonProgress[statId];
+  writeAppData(data);
+  renderTheoryLevels();
+  setSyncStatus(`已修正“${level.title}”统计，稍后会自动同步到云端。`);
+}
+
 function recordQuestionAttempt(levelId, isCorrect) {
   const data = readAppData();
   const deviceId = getDeviceId(data);
@@ -1831,6 +1901,7 @@ function answerDrill(type, answer) {
   const state = drillState[type];
   const current = state.note;
   if (!current) return;
+  if (state.status === "correct") return;
   upsertAppLearningRecord();
 
   const correctName = current.name;
@@ -1882,6 +1953,7 @@ function answerChoiceDrill(levelId, answer) {
   if (!level) return;
 
   const state = ensureChoiceQuestion(level);
+  if (state.status === "correct") return;
   const isCorrect = answer === state.question.answer;
   upsertAppLearningRecord();
   state.attempts += 1;
@@ -2378,6 +2450,12 @@ function setupEvents() {
   });
 
   els.theoryLevelDetail.addEventListener("click", event => {
+    const repairLevelButton = event.target.closest("[data-repair-level]");
+    if (repairLevelButton) {
+      repairLevelStats(repairLevelButton.dataset.repairLevel);
+      return;
+    }
+
     const resetLevelButton = event.target.closest("[data-reset-level]");
     if (resetLevelButton) {
       resetLevelProgress(resetLevelButton.dataset.resetLevel);
