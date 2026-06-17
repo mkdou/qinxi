@@ -685,14 +685,16 @@ function normalizeQuestionStat(stat, fallbackDeviceId = "legacy") {
       byDevice[deviceId] = {
         attempts: Number(deviceStat?.attempts) || 0,
         correct: Number(deviceStat?.correct) || 0,
-        lastPracticedAt: deviceStat?.lastPracticedAt || null
+        lastPracticedAt: deviceStat?.lastPracticedAt || null,
+        revisionAt: deviceStat?.revisionAt || null
       };
     });
   } else if (stat) {
     byDevice[fallbackDeviceId] = {
       attempts: Number(stat.attempts) || 0,
       correct: Number(stat.correct) || 0,
-      lastPracticedAt: stat.lastPracticedAt || null
+      lastPracticedAt: stat.lastPracticedAt || null,
+      revisionAt: stat.revisionAt || null
     };
   }
 
@@ -952,7 +954,11 @@ function mergeQuestionStats(first, second) {
         lastPracticedAt:
           timestampValue(leftStat.lastPracticedAt) >= timestampValue(rightStat.lastPracticedAt)
             ? leftStat.lastPracticedAt || null
-            : rightStat.lastPracticedAt || null
+            : rightStat.lastPracticedAt || null,
+        revisionAt:
+          timestampValue(leftStat.revisionAt) >= timestampValue(rightStat.revisionAt)
+            ? leftStat.revisionAt || null
+            : rightStat.revisionAt || null
       };
     });
     merged[id] = normalizeQuestionStat({ byDevice });
@@ -960,13 +966,18 @@ function mergeQuestionStats(first, second) {
   return merged;
 }
 
-function filterStatsAfterReset(stats, resetAt) {
+function filterStatsAfterReset(stats, resetAt, revisionAt = {}) {
   const nextStats = {};
   Object.entries(stats || {}).forEach(([levelId, stat]) => {
     const normalized = normalizeQuestionStat(stat);
     const byDevice = {};
     const resetTime = timestampValue(typeof resetAt === "object" ? resetAt[levelId] : resetAt);
+    const revisionTime = timestampValue(revisionAt?.[levelId]);
     Object.entries(normalized.byDevice || {}).forEach(([deviceId, deviceStat]) => {
+      if (revisionTime) {
+        if (timestampValue(deviceStat.revisionAt) >= revisionTime) byDevice[deviceId] = deviceStat;
+        return;
+      }
       if (!resetTime || timestampValue(deviceStat.lastPracticedAt) > resetTime) byDevice[deviceId] = deviceStat;
     });
     const nextStat = normalizeQuestionStat({ byDevice });
@@ -1002,6 +1013,16 @@ function mergeAppData(remoteData, localData) {
     levelResetAt[levelId] =
       timestampValue(localReset) >= timestampValue(remoteReset) ? localReset || null : remoteReset || null;
   });
+  const levelStatRevisionAt = {};
+  new Set([
+    ...Object.keys(remote.sync?.levelStatRevisionAt || {}),
+    ...Object.keys(local.sync?.levelStatRevisionAt || {})
+  ]).forEach(levelId => {
+    const remoteRevision = remote.sync?.levelStatRevisionAt?.[levelId];
+    const localRevision = local.sync?.levelStatRevisionAt?.[levelId];
+    levelStatRevisionAt[levelId] =
+      timestampValue(localRevision) >= timestampValue(remoteRevision) ? localRevision || null : remoteRevision || null;
+  });
   const resetMap = { ...levelResetAt };
   if (learningResetAt) {
     new Set([...Object.keys(remote.questionStats || {}), ...Object.keys(local.questionStats || {})]).forEach(levelId => {
@@ -1010,7 +1031,8 @@ function mergeAppData(remoteData, localData) {
   }
   const mergedStats = filterStatsAfterReset(
     mergeQuestionStats(remote.questionStats, local.questionStats),
-    resetMap
+    resetMap,
+    levelStatRevisionAt
   );
   return {
     ...local,
@@ -1034,6 +1056,7 @@ function mergeAppData(remoteData, localData) {
       ...local.sync,
       learningResetAt,
       levelResetAt,
+      levelStatRevisionAt,
       updatedAt:
         timestampValue(local.sync?.updatedAt) >= timestampValue(remote.sync?.updatedAt)
           ? local.sync?.updatedAt
@@ -1897,11 +1920,20 @@ function resetLearningProgress() {
   const confirmed = window.confirm("确认重置学习进度和做题统计吗？打卡日志、导入素材和账号登录不会删除。");
   if (!confirmed) return;
   const data = readAppData();
+  const now = new Date().toISOString();
+  const allStatIds = new Set([
+    ...Object.keys(data.questionStats || {}),
+    ...getAllTheoryLevels().flatMap(level => relatedLevelStatIds(level.id))
+  ]);
   data.lessonProgress = {};
   data.questionStats = {};
   data.sync = {
     ...(data.sync || {}),
-    learningResetAt: new Date().toISOString()
+    learningResetAt: now,
+    levelStatRevisionAt: {
+      ...(data.sync?.levelStatRevisionAt || {}),
+      ...Object.fromEntries([...allStatIds].map(statId => [statId, now]))
+    }
   };
   writeAppData(data);
   Object.assign(drillState, {
@@ -1922,6 +1954,7 @@ function resetLevelProgress(levelId) {
   if (!confirmed) return;
 
   const data = readAppData();
+  const now = new Date().toISOString();
   relatedLevelStatIds(levelId).forEach(statId => {
     delete data.lessonProgress[statId];
     delete data.questionStats[statId];
@@ -1930,7 +1963,11 @@ function resetLevelProgress(levelId) {
     ...(data.sync || {}),
     levelResetAt: {
       ...(data.sync?.levelResetAt || {}),
-      ...Object.fromEntries(relatedLevelStatIds(levelId).map(statId => [statId, new Date().toISOString()]))
+      ...Object.fromEntries(relatedLevelStatIds(levelId).map(statId => [statId, now]))
+    },
+    levelStatRevisionAt: {
+      ...(data.sync?.levelStatRevisionAt || {}),
+      ...Object.fromEntries(relatedLevelStatIds(levelId).map(statId => [statId, now]))
     }
   };
   writeAppData(data);
@@ -1986,7 +2023,8 @@ function repairLevelStats(levelId) {
         [deviceId]: {
           attempts,
           correct,
-          lastPracticedAt: now
+          lastPracticedAt: now,
+          revisionAt: now
         }
       }
     },
@@ -1997,6 +2035,10 @@ function repairLevelStats(levelId) {
     levelResetAt: {
       ...(data.sync?.levelResetAt || {}),
       [statId]: resetAt
+    },
+    levelStatRevisionAt: {
+      ...(data.sync?.levelStatRevisionAt || {}),
+      [statId]: now
     }
   };
   if (correct >= 5) data.lessonProgress[statId] = true;
@@ -2018,6 +2060,7 @@ function recordQuestionAttempt(levelId, isCorrect) {
   deviceStats.attempts += 1;
   if (isCorrect) deviceStats.correct += 1;
   deviceStats.lastPracticedAt = new Date().toISOString();
+  deviceStats.revisionAt = data.sync?.levelStatRevisionAt?.[levelId] || deviceStats.revisionAt || null;
   stats.byDevice[deviceId] = deviceStats;
   data.questionStats[levelId] = normalizeQuestionStat(stats);
   writeAppData(data);
