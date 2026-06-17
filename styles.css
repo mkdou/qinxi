@@ -779,6 +779,34 @@ button {
   background: #f4f4f4;
 }
 
+.staff-placement-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 18px 0;
+  color: var(--ink);
+  text-align: center;
+}
+
+.staff-placement-prompt strong {
+  font-size: 22px;
+}
+
+.staff-placement-prompt span {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.staff-placement-stage {
+  padding-top: 12px;
+}
+
 .drill-stage.wrong .drill-dot,
 .drill-stage.wrong .staff-note-dot {
   animation: wrongFlash 0.22s linear 2;
@@ -794,6 +822,15 @@ button {
 
 .drill-staff {
   width: 100%;
+}
+
+.staff-placement-svg {
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+
+.staff-user-mark {
+  pointer-events: none;
 }
 
 .drill-options {

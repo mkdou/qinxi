@@ -276,8 +276,8 @@ const staffLedgerDrillNotes = {
 const drillState = {
   keyboard: { note: null, status: "idle", correct: 0, attempts: 0 },
   black: { note: null, naming: "sharp", status: "idle", correct: 0, attempts: 0 },
-  staff: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
-  staffLedger: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
+  staff: { clef: "treble", question: null, marks: [], status: "idle", correct: 0, attempts: 0 },
+  staffLedger: { clef: "treble", question: null, marks: [], status: "idle", correct: 0, attempts: 0 },
   choice: {}
 };
 
@@ -292,12 +292,85 @@ function ensureDrillQuestion(type) {
   if (type === "black" && !drillState.black.note) {
     drillState.black.note = randomItem(pianoBlackKeys);
   }
-  if (type === "staff" && !drillState.staff.note) {
-    drillState.staff.note = randomItem(staffDrillNotes[drillState.staff.clef]);
+  if ((type === "staff" || type === "staffLedger") && !drillState[type].question) {
+    drillState[type].question = createStaffPlacementQuestion(type, drillState[type].clef);
+    drillState[type].marks = [];
   }
-  if (type === "staffLedger" && !drillState.staffLedger.note) {
-    drillState.staffLedger.note = randomItem(staffLedgerDrillNotes[drillState.staffLedger.clef]);
+}
+
+function staffNotePool(type, clef) {
+  return type === "staffLedger" ? staffLedgerDrillNotes[clef] : staffDrillNotes[clef];
+}
+
+function createStaffPlacementQuestion(type, clef) {
+  const notes = staffNotePool(type, clef);
+  const byName = notes.reduce((map, note) => {
+    map[note.name] = [...(map[note.name] || []), note];
+    return map;
+  }, {});
+  const multiOptions = Object.values(byName).filter(items => items.length >= 2);
+  const shouldAskMultiple = multiOptions.length > 0 && Math.random() < 0.38;
+
+  if (shouldAskMultiple) {
+    const positions = randomItem(multiOptions).slice(0, 2);
+    return {
+      mode: "multiple",
+      targetName: positions[0].name,
+      positions,
+      prompt: `请在下面标注出两个 ${positions[0].name} 的位置`,
+      requiredCount: 2
+    };
   }
+
+  const position = randomItem(notes);
+  return {
+    mode: "single",
+    targetName: position.name,
+    positions: [position],
+    prompt: `请在下面标注出 ${position.name}${position.octave}`,
+    requiredCount: 1
+  };
+}
+
+function staffMarkY(step, bottomLineY, stepGap) {
+  return bottomLineY - step * stepGap;
+}
+
+function staffLedgerLinesForMark(x, step, bottomLineY, stepGap) {
+  const lines = [];
+  if (step <= -2) {
+    const lastLedgerStep = Math.floor(step / 2) * 2;
+    for (let ledgerStep = -2; ledgerStep >= lastLedgerStep; ledgerStep -= 2) {
+      const y = staffMarkY(ledgerStep, bottomLineY, stepGap);
+      lines.push(`<line x1="${x - 24}" y1="${y}" x2="${x + 24}" y2="${y}" stroke="#333" stroke-width="1.7" />`);
+    }
+  }
+  if (step >= 10) {
+    const lastLedgerStep = Math.ceil(step / 2) * 2;
+    for (let ledgerStep = 10; ledgerStep <= lastLedgerStep; ledgerStep += 2) {
+      const y = staffMarkY(ledgerStep, bottomLineY, stepGap);
+      lines.push(`<line x1="${x - 24}" y1="${y}" x2="${x + 24}" y2="${y}" stroke="#333" stroke-width="1.7" />`);
+    }
+  }
+  return lines.join("");
+}
+
+function staffMarkFromSvgEvent(event) {
+  const svg = event.target.closest("svg");
+  if (!svg) return null;
+  const rect = svg.getBoundingClientRect();
+  const viewBox = svg.viewBox.baseVal;
+  const x = ((event.clientX - rect.left) / rect.width) * viewBox.width;
+  const y = ((event.clientY - rect.top) / rect.height) * viewBox.height;
+  const bottomLineY = Number(svg.dataset.bottomLineY);
+  const stepGap = Number(svg.dataset.stepGap);
+  const minStep = Number(svg.dataset.minStep);
+  const maxStep = Number(svg.dataset.maxStep);
+  const step = Math.max(minStep, Math.min(maxStep, Math.round((bottomLineY - y) / stepGap)));
+  return {
+    step,
+    x: Math.max(128, Math.min(viewBox.width - 52, x))
+  };
 }
 
 function getAllTheoryLevels() {
@@ -1648,34 +1721,38 @@ function renderStaffDrill(type = "staff") {
   const state = drillState[type];
   const levelId = staffStatsId(type, state.clef);
   const stats = getPersistedLevelStats(levelId);
-  const note = state.note;
-  const noteInfo = noteOptions.find(item => item.name === note.name);
   const clefLabel = state.clef === "treble" ? "高音谱号" : "低音谱号";
+  const question = state.question;
   const feedback =
     state.status === "correct"
-      ? `答对了：${note.name}${note.octave}，简谱 ${noteInfo.numbered}。`
+      ? "答对了，位置标得很准。"
       : state.status === "wrong"
-        ? `还不对，正确答案是 ${note.name}${note.octave}。`
-        : "选择这个音符对应的音名。答题前不显示答案。";
-  const bottomLineY = 124;
-  const stepGap = 10;
-  const noteY = bottomLineY - note.step * stepGap;
-  const lines = [44, 64, 84, 104, 124]
-    .map(y => `<line x1="38" y1="${y}" x2="410" y2="${y}" stroke="#333" stroke-width="1.5" />`)
+        ? "位置还不对，再看清线和间。"
+        : question.requiredCount === 2
+          ? "依次点击两个位置，落点会自动吸附到最近的线或间。"
+          : "点击五线谱上的线或间，落点会自动吸附到最近位置。";
+  const bottomLineY = 154;
+  const stepGap = 12;
+  const minStep = -4;
+  const maxStep = 12;
+  const lines = [0, 2, 4, 6, 8]
+    .map(step => {
+      const y = staffMarkY(step, bottomLineY, stepGap);
+      return `<line x1="52" y1="${y}" x2="410" y2="${y}" stroke="#333" stroke-width="1.7" />`;
+    })
     .join("");
-  const ledgerLines = [];
-  if (note.step <= -2) {
-    for (let step = -2; step >= note.step; step -= 2) {
-      const y = bottomLineY - step * stepGap;
-      ledgerLines.push(`<line x1="220" y1="${y}" x2="272" y2="${y}" stroke="#333" stroke-width="1.5" />`);
-    }
-  }
-  if (note.step >= 10) {
-    for (let step = 10; step <= note.step; step += 2) {
-      const y = bottomLineY - step * stepGap;
-      ledgerLines.push(`<line x1="220" y1="${y}" x2="272" y2="${y}" stroke="#333" stroke-width="1.5" />`);
-    }
-  }
+  const marks = (state.marks || [])
+    .map(mark => {
+      const y = staffMarkY(mark.step, bottomLineY, stepGap);
+      const fill = state.status === "correct" ? "#2e9b5f" : "#f12d2d";
+      return `
+        <g class="staff-user-mark">
+          ${staffLedgerLinesForMark(mark.x, mark.step, bottomLineY, stepGap)}
+          <ellipse class="staff-note-dot" cx="${mark.x}" cy="${y}" rx="18" ry="12" fill="${fill}" transform="rotate(-18 ${mark.x} ${y})" />
+        </g>
+      `;
+    })
+    .join("");
 
   return `
     <section class="drill-card">
@@ -1687,29 +1764,26 @@ function renderStaffDrill(type = "staff") {
         <button class="${state.clef === "treble" ? "active" : ""}" data-clef="treble" data-clef-drill="${type}">高音谱号</button>
         <button class="${state.clef === "bass" ? "active" : ""}" data-clef="bass" data-clef-drill="${type}">低音谱号</button>
       </div>
-      <div class="drill-stage ${state.status}">
-        <svg class="drill-staff" viewBox="0 0 450 190" role="img" aria-label="${clefLabel}认音练习">
-          ${lines}
-          <text class="staff-clef" x="${state.clef === "treble" ? 48 : 54}" y="${state.clef === "treble" ? 133 : 118}" font-size="${state.clef === "treble" ? 112 : 92}" fill="#1f2a24">${state.clef === "treble" ? "𝄞" : "𝄢"}</text>
-          ${ledgerLines.join("")}
-          <ellipse class="staff-note-dot" cx="246" cy="${noteY}" rx="18" ry="12" fill="${state.status === "correct" ? "#2e9b5f" : "#f12d2d"}" transform="rotate(-18 246 ${noteY})" />
-        </svg>
+      <div class="staff-placement-prompt">
+        <strong>${question.prompt}</strong>
+        <span>${question.requiredCount === 2 ? `${state.marks.length}/2 已标注` : "点击谱面作答"}</span>
       </div>
-      <div class="drill-options">
-        ${noteOptions
-          .map(
-            option => {
-              const buttonState =
-                state.lastAnswer === option.name ? (state.status === "correct" ? "correct" : "wrong") : "";
-              return `
-              <button class="${buttonState}" data-drill-type="${type}" data-drill-answer="${option.name}">
-                <strong>${option.name}</strong>
-                <span>${option.numbered} · ${["Do", "Re", "Mi", "Fa", "Sol", "La", "Si"][noteOptions.indexOf(option)]}</span>
-              </button>
-            `;
-            }
-          )
-          .join("")}
+      <div class="drill-stage staff-placement-stage ${state.status}">
+        <svg
+          class="drill-staff staff-placement-svg"
+          viewBox="0 0 450 236"
+          role="img"
+          aria-label="${clefLabel}标注音符练习"
+          data-staff-placement="${type}"
+          data-bottom-line-y="${bottomLineY}"
+          data-step-gap="${stepGap}"
+          data-min-step="${minStep}"
+          data-max-step="${maxStep}"
+        >
+          ${lines}
+          <text class="staff-clef" x="${state.clef === "treble" ? 70 : 76}" y="${state.clef === "treble" ? 162 : 144}" font-size="${state.clef === "treble" ? 116 : 94}" fill="#1f2a24">${state.clef === "treble" ? "𝄞" : "𝄢"}</text>
+          ${marks}
+        </svg>
       </div>
       <p class="drill-hint">${feedback}</p>
     </section>
@@ -1939,8 +2013,8 @@ function resetLearningProgress() {
   Object.assign(drillState, {
     keyboard: { note: null, status: "idle", correct: 0, attempts: 0 },
     black: { note: null, naming: "sharp", status: "idle", correct: 0, attempts: 0 },
-    staff: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
-    staffLedger: { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 },
+    staff: { clef: "treble", question: null, marks: [], status: "idle", correct: 0, attempts: 0 },
+    staffLedger: { clef: "treble", question: null, marks: [], status: "idle", correct: 0, attempts: 0 },
     choice: {}
   });
   renderTheoryLevels();
@@ -1974,8 +2048,8 @@ function resetLevelProgress(levelId) {
 
   if (levelId === "notes") drillState.keyboard = { note: null, status: "idle", correct: 0, attempts: 0 };
   if (levelId === "black-keys") drillState.black = { note: null, naming: "sharp", status: "idle", correct: 0, attempts: 0 };
-  if (levelId === "staff-note") drillState.staff = { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 };
-  if (levelId === "staff-ledger") drillState.staffLedger = { clef: "treble", note: null, status: "idle", correct: 0, attempts: 0 };
+  if (levelId === "staff-note") drillState.staff = { clef: "treble", question: null, marks: [], status: "idle", correct: 0, attempts: 0 };
+  if (levelId === "staff-ledger") drillState.staffLedger = { clef: "treble", question: null, marks: [], status: "idle", correct: 0, attempts: 0 };
   if (drillState.choice[levelId]) delete drillState.choice[levelId];
 
   renderTheoryLevels();
@@ -2064,6 +2138,61 @@ function recordQuestionAttempt(levelId, isCorrect) {
   stats.byDevice[deviceId] = deviceStats;
   data.questionStats[levelId] = normalizeQuestionStat(stats);
   writeAppData(data);
+}
+
+function answerStaffPlacement(type, mark) {
+  const state = drillState[type];
+  if (!state?.question || state.status === "correct" || !mark) return;
+
+  const question = state.question;
+  const levelId = staffStatsId(type, state.clef);
+  const baseStaffLevelId = type === "staffLedger" ? "staff-ledger" : "staff-note";
+
+  if (question.requiredCount === 1) {
+    state.marks = [mark];
+  } else {
+    const hasSameStep = state.marks.some(item => item.step === mark.step);
+    if (!hasSameStep && state.marks.length < question.requiredCount) state.marks = [...state.marks, mark];
+  }
+
+  if (state.marks.length < question.requiredCount) {
+    renderTheoryLevels();
+    return;
+  }
+
+  upsertAppLearningRecord();
+  const targetSteps = question.positions.map(position => position.step).sort((a, b) => a - b);
+  const answerSteps = state.marks.map(item => item.step).sort((a, b) => a - b);
+  const isCorrect =
+    targetSteps.length === answerSteps.length &&
+    targetSteps.every((step, index) => step === answerSteps[index]);
+
+  state.attempts += 1;
+  recordQuestionAttempt(levelId, isCorrect);
+
+  if (isCorrect) {
+    state.correct += 1;
+    state.status = "correct";
+    playTone(noteFrequency(question.positions[0]), true);
+    updateStaffCompletion(baseStaffLevelId);
+    renderTheoryLevels();
+    setTimeout(() => {
+      state.question = null;
+      state.marks = [];
+      state.status = "idle";
+      renderTheoryLevels();
+    }, 720);
+    return;
+  }
+
+  state.status = "wrong";
+  playTone(120, false);
+  renderTheoryLevels();
+  setTimeout(() => {
+    state.marks = [];
+    state.status = "idle";
+    renderTheoryLevels();
+  }, 680);
 }
 
 function answerDrill(type, answer) {
@@ -2166,7 +2295,8 @@ function switchBlackNaming(naming) {
 function switchStaffClef(clef, type = "staff") {
   const state = drillState[type] || drillState.staff;
   state.clef = clef;
-  state.note = null;
+  state.question = null;
+  state.marks = [];
   state.status = "idle";
   state.lastAnswer = null;
   renderTheoryLevels();
@@ -2629,6 +2759,12 @@ function setupEvents() {
   });
 
   els.theoryLevelDetail.addEventListener("click", event => {
+    const staffPlacement = event.target.closest("[data-staff-placement]");
+    if (staffPlacement) {
+      answerStaffPlacement(staffPlacement.dataset.staffPlacement, staffMarkFromSvgEvent(event));
+      return;
+    }
+
     const repairLevelButton = event.target.closest("[data-repair-level]");
     if (repairLevelButton) {
       repairLevelStats(repairLevelButton.dataset.repairLevel);
