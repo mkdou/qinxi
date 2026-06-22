@@ -260,6 +260,7 @@ const earState = {
 let earPlaybackTimers = [];
 let pianoWarmGroupId = null;
 let pianoWarmStatus = "idle";
+let earPianoInitialPositioned = false;
 
 const pianoWhiteKeys = [
   { name: "C", octave: 4 },
@@ -2024,6 +2025,8 @@ async function toggleEarLandscape() {
 
 function renderEarPianoExplorer() {
   if (!els.earPianoExplorer) return;
+  const previousScroller = els.earPianoExplorer.querySelector(".ear-keyboard-scroll");
+  const previousScrollLeft = previousScroller ? previousScroller.scrollLeft : null;
   const piano = buildPiano88Keys();
   const selectedGroup = getEarGroup();
   const ruler = earOctaveGroups
@@ -2079,7 +2082,13 @@ function renderEarPianoExplorer() {
   const scroller = els.earPianoExplorer.querySelector(".ear-keyboard-scroll");
   scroller?.addEventListener("scroll", () => updateEarVisibleGroup(scroller, piano), { passive: true });
   updateEarLandscapeButton();
-  window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId));
+  if (scroller && previousScrollLeft !== null) {
+    scroller.scrollLeft = previousScrollLeft;
+    updateEarVisibleGroup(scroller, piano);
+  } else if (!earPianoInitialPositioned) {
+    earPianoInitialPositioned = true;
+    window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId));
+  }
 }
 
 function renderEarCourseTabs() {

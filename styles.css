@@ -246,10 +246,16 @@ button {
 
 .ear-piano-toolbar {
   display: flex;
+  min-height: 86px;
   gap: 18px;
   align-items: end;
   justify-content: space-between;
   padding: 16px 18px;
+}
+
+.ear-piano-toolbar > div:first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .ear-piano-toolbar > div span,
@@ -263,13 +269,16 @@ button {
 
 .ear-piano-toolbar > div strong {
   display: block;
+  min-height: 24px;
   margin-top: 4px;
   color: var(--ink);
   font-size: 20px;
+  white-space: nowrap;
 }
 
 .ear-audio-status {
   display: block;
+  min-height: 14px;
   margin-top: 4px;
   color: #8a6a43;
   font-size: 11px;
@@ -370,6 +379,7 @@ body.ear-landscape-mode .ear-piano-tool {
 }
 
 body.ear-landscape-mode .ear-piano-toolbar {
+  min-height: 66px;
   padding: 8px 14px;
 }
 
