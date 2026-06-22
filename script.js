@@ -402,8 +402,10 @@ function numberedPitchMarkup(position) {
 
 function numberedPitchText(position) {
   const info = numberedPitchInfo(position);
-  if (info.upperDots) return `${info.number}（上${info.upperDots}点）`;
-  if (info.lowerDots) return `${info.number}（下${info.lowerDots}点）`;
+  if (info.upperDots === 1) return `${info.number}\u0307`;
+  if (info.upperDots >= 2) return `${info.number}\u0308`;
+  if (info.lowerDots === 1) return `${info.number}\u0323`;
+  if (info.lowerDots >= 2) return `${info.number}\u0324`;
   return info.number;
 }
 
