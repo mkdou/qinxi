@@ -65,7 +65,7 @@ const theoryLevels = [
     id: "staff-note",
     group: "读谱",
     title: "识别五线谱上的音",
-    summary: "在高音谱号或低音谱号里随机出现一个音符，选择正确的音名和简谱音级。",
+    summary: "按指定的音名和八度，在高音谱号或低音谱号上标注正确位置，并辨认简谱的高低音点。",
     contents: ["高音谱号", "低音谱号", "简谱高低音点"],
     visual: staffVisual("高音谱号 C 到 G", ["C4", "D4", "E4", "F4", "G4"]),
     points: ["谱上越高，实际音越高", "高音谱号第 2 线是 G", "低音谱号第 4 线是 F"],
@@ -248,6 +248,8 @@ const pianoBlackKeys = [
 
 const staffDrillNotes = {
   treble: [
+    { name: "A", octave: 3, step: -4, ledger: "below" },
+    { name: "B", octave: 3, step: -3, ledger: "below" },
     { name: "C", octave: 4, step: -2, ledger: "below" },
     { name: "D", octave: 4, step: -1 },
     { name: "E", octave: 4, step: 0 },
@@ -260,9 +262,13 @@ const staffDrillNotes = {
     { name: "E", octave: 5, step: 7 },
     { name: "F", octave: 5, step: 8 },
     { name: "G", octave: 5, step: 9 },
-    { name: "A", octave: 5, step: 10, ledger: "above" }
+    { name: "A", octave: 5, step: 10, ledger: "above" },
+    { name: "B", octave: 5, step: 11, ledger: "above" },
+    { name: "C", octave: 6, step: 12, ledger: "above" }
   ],
   bass: [
+    { name: "C", octave: 2, step: -4, ledger: "below" },
+    { name: "D", octave: 2, step: -3, ledger: "below" },
     { name: "E", octave: 2, step: -2, ledger: "below" },
     { name: "F", octave: 2, step: -1 },
     { name: "G", octave: 2, step: 0 },
@@ -275,7 +281,9 @@ const staffDrillNotes = {
     { name: "G", octave: 3, step: 7 },
     { name: "A", octave: 3, step: 8 },
     { name: "B", octave: 3, step: 9 },
-    { name: "C", octave: 4, step: 10, ledger: "above" }
+    { name: "C", octave: 4, step: 10, ledger: "above" },
+    { name: "D", octave: 4, step: 11, ledger: "above" },
+    { name: "E", octave: 4, step: 12, ledger: "above" }
   ]
 };
 
@@ -337,7 +345,10 @@ function createStaffPlacementQuestion(type, clef) {
   const shouldAskMultiple = multiOptions.length > 0 && Math.random() < 0.38;
 
   if (shouldAskMultiple) {
-    const positions = randomItem(multiOptions).slice(0, 2);
+    const positions = [...randomItem(multiOptions)]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2)
+      .sort((a, b) => a.step - b.step);
     return {
       mode: "multiple",
       targetName: positions[0].name,
@@ -355,6 +366,57 @@ function createStaffPlacementQuestion(type, clef) {
     prompt: `请在下面标注出 ${position.name}${position.octave}`,
     requiredCount: 1
   };
+}
+
+function staffPositionFromStep(clef, step) {
+  const letters = ["C", "D", "E", "F", "G", "A", "B"];
+  const basePosition = clef === "treble" ? 4 * 7 + 2 : 2 * 7 + 4;
+  const absolutePosition = basePosition + step;
+  return {
+    name: letters[((absolutePosition % 7) + 7) % 7],
+    octave: Math.floor(absolutePosition / 7),
+    step
+  };
+}
+
+function numberedPitchInfo(position) {
+  const note = noteOptions.find(item => item.name === position.name);
+  const octaveOffset = position.octave - 4;
+  return {
+    number: note?.numbered || "",
+    upperDots: Math.max(0, octaveOffset),
+    lowerDots: Math.max(0, -octaveOffset)
+  };
+}
+
+function numberedPitchMarkup(position) {
+  const info = numberedPitchInfo(position);
+  return `
+    <span class="numbered-pitch" aria-label="简谱 ${info.number}${info.upperDots ? ` 上方 ${info.upperDots} 点` : ""}${info.lowerDots ? ` 下方 ${info.lowerDots} 点` : ""}">
+      <span class="numbered-pitch-dots">${"•".repeat(info.upperDots)}</span>
+      <strong>${info.number}</strong>
+      <span class="numbered-pitch-dots">${"•".repeat(info.lowerDots)}</span>
+    </span>
+  `;
+}
+
+function numberedPitchText(position) {
+  const info = numberedPitchInfo(position);
+  if (info.upperDots) return `${info.number}（上${info.upperDots}点）`;
+  if (info.lowerDots) return `${info.number}（下${info.lowerDots}点）`;
+  return info.number;
+}
+
+function staffPitchText(position) {
+  return `${position.name}${position.octave} · ${numberedPitchText(position)}`;
+}
+
+function staffTargetSummary(question) {
+  return question.positions.map(staffPitchText).join("、");
+}
+
+function staffMarkIsCorrect(mark, question) {
+  return question.positions.some(position => position.step === mark.step);
 }
 
 function staffMarkY(step, bottomLineY, stepGap) {
@@ -1806,11 +1868,12 @@ function renderStaffDrill(type = "staff") {
   const stats = getPersistedLevelStats(levelId);
   const clefLabel = state.clef === "treble" ? "高音谱号" : "低音谱号";
   const question = state.question;
+  const answeredPositions = (state.marks || []).map(mark => staffPositionFromStep(state.clef, mark.step));
   const feedback =
     state.status === "correct"
-      ? "答对了，位置标得很准。"
+      ? `答对了。目标位置是 ${staffTargetSummary(question)}。`
       : state.status === "wrong"
-        ? "位置还不对，再看清线和间。"
+        ? `本题目标是 ${staffTargetSummary(question)}；你标成了 ${answeredPositions.map(staffPitchText).join("、")}。请对照谱线查看红色落点。`
         : question.requiredCount === 2
           ? "依次点击两个位置，落点会自动吸附到最近的线或间。"
           : "点击五线谱上的线或间，落点会自动吸附到最近位置。";
@@ -1827,11 +1890,25 @@ function renderStaffDrill(type = "staff") {
   const marks = (state.marks || [])
     .map(mark => {
       const y = staffMarkY(mark.step, bottomLineY, stepGap);
-      const fill = state.status === "correct" ? "#2e9b5f" : "#f12d2d";
+      const position = staffPositionFromStep(state.clef, mark.step);
+      const isGraded = state.status === "correct" || state.status === "wrong";
+      const isMarkCorrect = staffMarkIsCorrect(mark, question);
+      const fill = isGraded ? (isMarkCorrect ? "#2e9b5f" : "#d93636") : "#2f6a55";
+      const labelY = y <= 38 ? y + 34 : y >= 188 ? y - 27 : y - 26;
+      const labelX = Math.max(78, Math.min(372, mark.x));
+      const label = `${isMarkCorrect ? "正确" : "标成"} ${staffPitchText(position)}`;
       return `
         <g class="staff-user-mark">
           ${staffLedgerLinesForMark(mark.x, mark.step, bottomLineY, stepGap)}
           <ellipse class="staff-note-dot" cx="${mark.x}" cy="${y}" rx="18" ry="12" fill="${fill}" transform="rotate(-18 ${mark.x} ${y})" />
+          ${
+            isGraded
+              ? `<g class="staff-mark-label ${isMarkCorrect ? "correct" : "wrong"}">
+                  <rect x="${labelX - 72}" y="${labelY - 15}" width="144" height="24" rx="5" />
+                  <text x="${labelX}" y="${labelY + 1}" text-anchor="middle">${label}</text>
+                </g>`
+              : ""
+          }
         </g>
       `;
     })
@@ -1849,11 +1926,12 @@ function renderStaffDrill(type = "staff") {
       </div>
       <div class="staff-placement-prompt">
         <strong>${question.prompt}</strong>
+        ${question.requiredCount === 1 ? `<span class="staff-target-chip">${question.positions[0].name}${question.positions[0].octave} = ${numberedPitchMarkup(question.positions[0])}</span>` : ""}
         <span>${question.requiredCount === 2 ? `${state.marks.length}/2 已标注` : "点击谱面作答"}</span>
       </div>
       <div class="drill-stage staff-placement-stage ${state.status}">
         <svg
-          class="drill-staff staff-placement-svg"
+          class="drill-staff staff-placement-svg ${state.status !== "idle" ? "graded" : ""}"
           viewBox="0 0 450 236"
           role="img"
           aria-label="${clefLabel}标注音符练习"
@@ -1869,6 +1947,7 @@ function renderStaffDrill(type = "staff") {
         </svg>
       </div>
       <p class="drill-hint">${feedback}</p>
+      ${state.status === "correct" || state.status === "wrong" ? `<div class="staff-next-row"><button class="primary-action" data-next-staff="${type}">下一题</button></div>` : ""}
     </section>
   `;
 }
@@ -2225,7 +2304,7 @@ function recordQuestionAttempt(levelId, isCorrect) {
 
 function answerStaffPlacement(type, mark) {
   const state = drillState[type];
-  if (!state?.question || state.status === "correct" || !mark) return;
+  if (!state?.question || state.status !== "idle" || !mark) return;
 
   const question = state.question;
   const levelId = staffStatsId(type, state.clef);
@@ -2259,23 +2338,20 @@ function answerStaffPlacement(type, mark) {
     playTone(noteFrequency(question.positions[0]), true);
     updateStaffCompletion(baseStaffLevelId);
     renderTheoryLevels();
-    setTimeout(() => {
-      state.question = null;
-      state.marks = [];
-      state.status = "idle";
-      renderTheoryLevels();
-    }, 720);
     return;
   }
 
   state.status = "wrong";
-  playTone(120, false);
   renderTheoryLevels();
-  setTimeout(() => {
-    state.marks = [];
-    state.status = "idle";
-    renderTheoryLevels();
-  }, 680);
+}
+
+function nextStaffPlacement(type) {
+  const state = drillState[type];
+  if (!state) return;
+  state.question = null;
+  state.marks = [];
+  state.status = "idle";
+  renderTheoryLevels();
 }
 
 function answerDrill(type, answer) {
@@ -2848,6 +2924,12 @@ function setupEvents() {
   });
 
   els.theoryLevelDetail.addEventListener("click", event => {
+    const nextStaffButton = event.target.closest("[data-next-staff]");
+    if (nextStaffButton) {
+      nextStaffPlacement(nextStaffButton.dataset.nextStaff);
+      return;
+    }
+
     const staffPlacement = event.target.closest("[data-staff-placement]");
     if (staffPlacement) {
       answerStaffPlacement(staffPlacement.dataset.staffPlacement, staffMarkFromSvgEvent(event));

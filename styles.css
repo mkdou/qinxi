@@ -817,11 +817,11 @@ button {
   text-align: center;
 }
 
-.staff-placement-prompt strong {
+.staff-placement-prompt > strong {
   font-size: 22px;
 }
 
-.staff-placement-prompt span {
+.staff-placement-prompt > span {
   border-radius: 999px;
   padding: 4px 10px;
   background: var(--accent-soft);
@@ -834,8 +834,7 @@ button {
   padding-top: 12px;
 }
 
-.drill-stage.wrong .drill-dot,
-.drill-stage.wrong .staff-note-dot {
+.drill-stage.wrong .drill-dot {
   animation: wrongFlash 0.22s linear 2;
 }
 
@@ -856,6 +855,10 @@ button {
   touch-action: manipulation;
 }
 
+.staff-placement-svg.graded {
+  cursor: default;
+}
+
 .staff-clef {
   font-family: "Bravura", serif;
   font-style: normal;
@@ -865,6 +868,69 @@ button {
 
 .staff-user-mark {
   pointer-events: none;
+}
+
+.staff-mark-label rect {
+  fill: #fffdf8;
+  stroke-width: 1.5;
+}
+
+.staff-mark-label text {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.staff-mark-label.correct rect {
+  stroke: #2e9b5f;
+}
+
+.staff-mark-label.correct text {
+  fill: #176b3e;
+}
+
+.staff-mark-label.wrong rect {
+  stroke: #d93636;
+}
+
+.staff-mark-label.wrong text {
+  fill: #a22323;
+}
+
+.staff-target-chip {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.numbered-pitch {
+  display: inline-grid;
+  grid-template-rows: 6px 18px 6px;
+  min-width: 18px;
+  place-items: center;
+  vertical-align: middle;
+}
+
+.numbered-pitch strong {
+  font-size: 17px;
+  line-height: 18px;
+}
+
+.numbered-pitch-dots {
+  height: 6px;
+  font-size: 9px;
+  line-height: 6px;
+  letter-spacing: 2px;
+}
+
+.staff-next-row {
+  display: flex;
+  justify-content: center;
+  padding: 0 22px 22px;
+}
+
+.staff-next-row .primary-action {
+  min-width: 128px;
 }
 
 .drill-options {
