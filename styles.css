@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Bravura";
+  src: url("./assets/Bravura.woff2") format("woff2");
+  font-display: block;
+  font-style: normal;
+  font-weight: 400;
+}
+
 :root {
   color-scheme: light;
   --bg: #f7f3ea;
@@ -846,6 +854,13 @@ button {
 .staff-placement-svg {
   cursor: crosshair;
   touch-action: manipulation;
+}
+
+.staff-clef {
+  font-family: "Bravura", serif;
+  font-style: normal;
+  font-weight: 400;
+  text-rendering: geometricPrecision;
 }
 
 .staff-user-mark {

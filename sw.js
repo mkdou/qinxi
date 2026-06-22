@@ -1,4 +1,4 @@
-const cacheName = "qinxi-v21";
+const cacheName = "qinxi-v22";
 const files = [
   "./",
   "./index.html",
@@ -8,7 +8,8 @@ const files = [
   "./assets/icon.svg",
   "./assets/icon-192.png",
   "./assets/icon-512.png",
-  "./assets/apple-touch-icon.png"
+  "./assets/apple-touch-icon.png",
+  "./assets/Bravura.woff2"
 ];
 
 self.addEventListener("install", event => {

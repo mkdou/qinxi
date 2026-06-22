@@ -1294,6 +1294,11 @@ function keyboardVisual(keys, caption) {
   `;
 }
 
+function staffClefMarkup(clef, x, referenceLineY, staffSpace) {
+  const glyph = clef === "bass" ? "&#xE062;" : "&#xE050;";
+  return `<text class="staff-clef" x="${x}" y="${referenceLineY}" font-size="${staffSpace * 3.25}" fill="#1f2a24" aria-hidden="true">${glyph}</text>`;
+}
+
 function staffVisual(label, notes) {
   const width = Math.max(340, 120 + notes.length * 42);
   const yMap = {
@@ -1455,7 +1460,7 @@ function scoreStaff(notes) {
     .join("");
   const notesMarkup = parsed
     .map((note, index) => {
-      const x = 92 + index * 48;
+      const x = 128 + index * 48;
       const step = noteToStep(note);
       const y = bottomLineY - step * stepGap;
       const ledgers = [];
@@ -1487,7 +1492,7 @@ function scoreStaff(notes) {
     <figure class="visual-card score-staff">
       <svg viewBox="0 0 ${width} 186" role="img" aria-label="五线谱和简谱对照">
         ${lines}
-        <text class="staff-clef" x="48" y="135" font-size="112" fill="#1f2a24">𝄞</text>
+        ${staffClefMarkup("treble", 50, 108, 20)}
         ${notesMarkup}
       </svg>
     </figure>
@@ -1782,7 +1787,7 @@ function renderStaffDrill(type = "staff") {
           data-max-step="${maxStep}"
         >
           ${lines}
-          <text class="staff-clef" x="${state.clef === "treble" ? 70 : 76}" y="${state.clef === "treble" ? 162 : 144}" font-size="${state.clef === "treble" ? 116 : 94}" fill="#1f2a24">${state.clef === "treble" ? "𝄞" : "𝄢"}</text>
+          ${staffClefMarkup(state.clef, 62, state.clef === "treble" ? 130 : 82, 24)}
           ${marks}
         </svg>
       </div>
