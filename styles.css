@@ -15,6 +15,12 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -193,7 +199,13 @@ button {
   background: var(--accent-soft);
 }
 
-.stats-grid,
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
 .record-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -503,6 +515,13 @@ button {
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+}
+
+.level-layout > *,
+.level-detail,
+.level-card {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .level-list,
@@ -1555,6 +1574,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .sync-form,
   .sync-actions {
     grid-template-columns: 1fr;
@@ -1597,10 +1620,22 @@ button {
   .level-list {
     position: static;
     display: flex;
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    min-width: 0;
     gap: 8px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 8px;
+    overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .level-list::-webkit-scrollbar {
+    display: none;
   }
 
   .level-layout {

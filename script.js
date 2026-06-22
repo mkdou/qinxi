@@ -685,6 +685,7 @@ const els = {
   syncNow: document.querySelector("#syncNow"),
   signOut: document.querySelector("#signOut"),
   streakDays: document.querySelector("#streakDays"),
+  totalCheckinDays: document.querySelector("#totalCheckinDays"),
   weekMinutes: document.querySelector("#weekMinutes"),
   totalMinutes: document.querySelector("#totalMinutes"),
   todayStatus: document.querySelector("#todayStatus"),
@@ -2635,7 +2636,7 @@ function renderImports() {
 }
 
 function calculateStreak(records) {
-  const dates = [...new Set(records.map(record => record.date))].sort((a, b) => b.localeCompare(a));
+  const dates = getPracticeDates(records);
   if (!dates.length) return 0;
 
   let cursor = new Date(`${dates[0]}T12:00:00`);
@@ -2647,6 +2648,10 @@ function calculateStreak(records) {
   }
 
   return streak;
+}
+
+function getPracticeDates(records) {
+  return [...new Set(records.map(record => record.date).filter(Boolean))].sort((a, b) => b.localeCompare(a));
 }
 
 function weekTotal(records) {
@@ -2663,13 +2668,15 @@ function weekTotal(records) {
 function renderStats() {
   const records = readRecords().sort((a, b) => b.date.localeCompare(a.date));
   const total = records.reduce((sum, record) => sum + record.minutes, 0);
+  const practiceDates = getPracticeDates(records);
   const todayRecord = records.find(record => record.date === todayISO());
 
   els.streakDays.textContent = `${calculateStreak(records)} 天`;
+  els.totalCheckinDays.textContent = `${practiceDates.length} 天`;
   els.weekMinutes.textContent = `${weekTotal(records)} 分钟`;
   els.totalMinutes.textContent = `${total} 分钟`;
-  els.recordDays.textContent = records.length;
-  els.avgMinutes.textContent = records.length ? `${Math.round(total / records.length)} 分钟` : "0 分钟";
+  els.recordDays.textContent = practiceDates.length;
+  els.avgMinutes.textContent = practiceDates.length ? `${Math.round(total / practiceDates.length)} 分钟` : "0 分钟";
   els.lastPractice.textContent = records[0] ? formatDate(records[0].date) : "暂无";
 
   if (todayRecord) {
