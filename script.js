@@ -1911,6 +1911,39 @@ function scrollEarPianoToGroup(groupId = earState.groupId, behavior = "auto") {
   scroller.scrollTo({ left: Math.max(0, firstWhite.left - scroller.clientWidth * 0.18), behavior });
 }
 
+function updateEarLandscapeButton() {
+  const button = els.earPianoExplorer?.querySelector("[data-ear-landscape]");
+  if (!button) return;
+  const active = document.body.classList.contains("ear-landscape-mode");
+  button.textContent = active ? "退出横屏" : "横屏";
+  button.setAttribute("aria-pressed", String(active));
+}
+
+async function toggleEarLandscape() {
+  const tool = els.earPianoExplorer?.querySelector(".ear-piano-tool");
+  if (!tool) return;
+  const active = document.body.classList.contains("ear-landscape-mode");
+
+  if (active) {
+    document.body.classList.remove("ear-landscape-mode");
+    try {
+      screen.orientation?.unlock?.();
+      if (document.fullscreenElement) await document.exitFullscreen?.();
+    } catch {}
+    updateEarLandscapeButton();
+    return;
+  }
+
+  document.body.classList.add("ear-landscape-mode");
+  updateEarLandscapeButton();
+  try {
+    if (tool.requestFullscreen && !document.fullscreenElement) await tool.requestFullscreen();
+    await screen.orientation?.lock?.("landscape");
+  } catch {
+    // iPhone 不开放横屏锁定 API，CSS 横向全屏模式仍会生效。
+  }
+}
+
 function renderEarPianoExplorer() {
   if (!els.earPianoExplorer) return;
   const piano = buildPiano88Keys();
@@ -1945,11 +1978,14 @@ function renderEarPianoExplorer() {
           <span>当前可视音组</span>
           <strong data-ear-visible-group>${selectedGroup.label} · ${selectedGroup.range}</strong>
         </div>
-        <label>练习音组
-          <select data-ear-group>
-            ${earOctaveGroups.filter(group => group.maxMidi - group.minMidi >= 2).map(group => `<option value="${group.id}" ${group.id === earState.groupId ? "selected" : ""}>${group.label}（${group.range}）</option>`).join("")}
-          </select>
-        </label>
+        <div class="ear-piano-toolbar-actions">
+          <label>练习音组
+            <select data-ear-group>
+              ${earOctaveGroups.filter(group => group.maxMidi - group.minMidi >= 2).map(group => `<option value="${group.id}" ${group.id === earState.groupId ? "selected" : ""}>${group.label}（${group.range}）</option>`).join("")}
+            </select>
+          </label>
+          <button class="ghost-action ear-landscape-button" type="button" data-ear-landscape aria-pressed="false">横屏</button>
+        </div>
       </div>
       <div class="ear-keyboard-scroll" aria-label="88键钢琴，可左右滑动">
         <div class="ear-keyboard-ruler" style="width:${piano.width}px">${ruler}</div>
@@ -1961,6 +1997,7 @@ function renderEarPianoExplorer() {
 
   const scroller = els.earPianoExplorer.querySelector(".ear-keyboard-scroll");
   scroller?.addEventListener("scroll", () => updateEarVisibleGroup(scroller, piano), { passive: true });
+  updateEarLandscapeButton();
   window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId));
 }
 
@@ -3291,6 +3328,12 @@ function setupEvents() {
     button.addEventListener("click", () => switchTab(button.dataset.tab));
   });
 
+  document.addEventListener("fullscreenchange", () => {
+    if (document.fullscreenElement || !document.body.classList.contains("ear-landscape-mode")) return;
+    document.body.classList.remove("ear-landscape-mode");
+    updateEarLandscapeButton();
+  });
+
   els.scoreModes.forEach(button => {
     button.addEventListener("click", () => {
       currentScoreMode = button.dataset.scoreMode;
@@ -3304,6 +3347,11 @@ function setupEvents() {
   });
 
   els.earPianoExplorer?.addEventListener("click", event => {
+    if (event.target.closest("[data-ear-landscape]")) {
+      toggleEarLandscape();
+      return;
+    }
+
     const key = event.target.closest("[data-ear-midi]");
     if (!key) return;
     const midi = Number(key.dataset.earMidi);

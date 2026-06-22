@@ -278,6 +278,70 @@ button {
   font-weight: 800;
 }
 
+.ear-piano-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+
+.ear-landscape-button {
+  min-width: 76px;
+  white-space: nowrap;
+}
+
+body.ear-landscape-mode {
+  overflow: hidden;
+}
+
+body.ear-landscape-mode .ear-piano-tool {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #fffdf8;
+}
+
+body.ear-landscape-mode .ear-piano-toolbar {
+  padding: 8px 14px;
+}
+
+body.ear-landscape-mode .ear-keyboard-ruler {
+  height: 42px;
+}
+
+body.ear-landscape-mode .ear-keyboard {
+  height: 150px;
+}
+
+body.ear-landscape-mode .ear-piano-key.white {
+  height: 144px;
+}
+
+body.ear-landscape-mode .ear-piano-key.black {
+  height: 90px;
+}
+
+body.ear-landscape-mode .ear-scroll-hint {
+  padding: 6px 14px;
+}
+
+@media (orientation: portrait) {
+  body.ear-landscape-mode .ear-piano-tool {
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 100vw;
+    width: 100vh;
+    height: 100vw;
+    transform: rotate(90deg);
+    transform-origin: top left;
+  }
+}
+
 .ear-keyboard-scroll {
   max-width: 100%;
   overflow-x: auto;
@@ -2077,6 +2141,12 @@ button {
 
   .ear-piano-toolbar label,
   .ear-piano-toolbar select {
+    width: 100%;
+  }
+
+  .ear-piano-toolbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     width: 100%;
   }
 
