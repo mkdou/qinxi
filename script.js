@@ -1982,12 +1982,23 @@ function updateEarVisibleGroup(scroller, piano) {
 
 function scrollEarPianoToGroup(groupId = earState.groupId, behavior = "auto") {
   const scroller = els.earPianoExplorer?.querySelector(".ear-keyboard-scroll");
-  if (!scroller) return;
+  if (!scroller || scroller.clientWidth <= 0) return false;
   const piano = buildPiano88Keys();
   const group = getEarGroup(groupId);
-  const firstWhite = piano.keys.find(key => !key.isBlack && key.midi >= group.minMidi);
-  if (!firstWhite) return;
-  scroller.scrollTo({ left: Math.max(0, firstWhite.left - scroller.clientWidth * 0.18), behavior });
+  const groupWhites = piano.keys.filter(key => !key.isBlack && key.midi >= group.minMidi && key.midi <= group.maxMidi);
+  const firstWhite = groupWhites[0];
+  if (!firstWhite) return false;
+  const groupWidth = groupWhites.length * piano.whiteWidth;
+  const targetLeft = Math.max(0, Math.min(piano.width - scroller.clientWidth, firstWhite.left - (scroller.clientWidth - groupWidth) / 2));
+  if (behavior === "auto") scroller.scrollLeft = targetLeft;
+  else scroller.scrollTo({ left: targetLeft, behavior });
+  updateEarVisibleGroup(scroller, piano);
+  return true;
+}
+
+function positionEarPianoOnFirstVisible() {
+  if (earPianoInitialPositioned) return;
+  if (scrollEarPianoToGroup("octave4")) earPianoInitialPositioned = true;
 }
 
 function updateEarLandscapeButton() {
@@ -2086,8 +2097,7 @@ function renderEarPianoExplorer() {
     scroller.scrollLeft = previousScrollLeft;
     updateEarVisibleGroup(scroller, piano);
   } else if (!earPianoInitialPositioned) {
-    earPianoInitialPositioned = true;
-    window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId));
+    window.requestAnimationFrame(positionEarPianoOnFirstVisible);
   }
 }
 
@@ -3440,6 +3450,9 @@ function renderRecords(records) {
 function switchTab(tabId) {
   els.panels.forEach(panel => panel.classList.toggle("active", panel.id === tabId));
   els.tabButtons.forEach(button => button.classList.toggle("active", button.dataset.tab === tabId));
+  if (tabId === "theory") {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(positionEarPianoOnFirstVisible));
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
