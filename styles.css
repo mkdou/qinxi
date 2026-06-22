@@ -253,7 +253,7 @@ button {
 }
 
 .ear-piano-toolbar > div span,
-.ear-piano-toolbar label {
+.ear-group-picker > span {
   display: grid;
   gap: 5px;
   color: var(--muted);
@@ -268,20 +268,72 @@ button {
   font-size: 20px;
 }
 
-.ear-piano-toolbar select {
+.ear-group-toggle {
   min-height: 40px;
+  width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 0 36px 0 12px;
+  padding: 0 12px;
   background: #fff;
   color: var(--ink);
   font-weight: 800;
+  text-align: left;
 }
 
 .ear-piano-toolbar-actions {
   display: flex;
   gap: 8px;
   align-items: end;
+}
+
+.ear-group-picker {
+  position: relative;
+  min-width: 238px;
+}
+
+.ear-group-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: min(430px, calc(100vw - 32px));
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #fffdf8;
+  box-shadow: 0 16px 36px rgba(31, 42, 36, 0.2);
+}
+
+.ear-group-menu[hidden] {
+  display: none;
+}
+
+.ear-group-menu button {
+  display: grid;
+  gap: 2px;
+  min-height: 54px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: #f5f6f3;
+  color: var(--ink);
+  text-align: left;
+}
+
+.ear-group-menu button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ear-group-menu button span {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .ear-landscape-button {
@@ -2139,8 +2191,8 @@ body.ear-landscape-mode .ear-scroll-hint {
     align-items: start;
   }
 
-  .ear-piano-toolbar label,
-  .ear-piano-toolbar select {
+  .ear-group-picker,
+  .ear-group-toggle {
     width: 100%;
   }
 
@@ -2148,6 +2200,16 @@ body.ear-landscape-mode .ear-scroll-hint {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     width: 100%;
+  }
+
+  .ear-group-picker {
+    min-width: 0;
+  }
+
+  .ear-group-menu {
+    right: auto;
+    left: 0;
+    width: min(430px, calc(100vh - 32px));
   }
 
   .ear-course-tabs {

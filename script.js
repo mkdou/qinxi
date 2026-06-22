@@ -1979,11 +1979,13 @@ function renderEarPianoExplorer() {
           <strong data-ear-visible-group>${selectedGroup.label} · ${selectedGroup.range}</strong>
         </div>
         <div class="ear-piano-toolbar-actions">
-          <label>练习音组
-            <select data-ear-group>
-              ${earOctaveGroups.filter(group => group.maxMidi - group.minMidi >= 2).map(group => `<option value="${group.id}" ${group.id === earState.groupId ? "selected" : ""}>${group.label}（${group.range}）</option>`).join("")}
-            </select>
-          </label>
+          <div class="ear-group-picker">
+            <span>练习音组</span>
+            <button class="ear-group-toggle" type="button" data-ear-group-menu aria-expanded="false">${selectedGroup.label}（${selectedGroup.range}）</button>
+            <div class="ear-group-menu" data-ear-group-options hidden>
+              ${earOctaveGroups.filter(group => group.maxMidi - group.minMidi >= 2).map(group => `<button class="${group.id === earState.groupId ? "active" : ""}" type="button" data-ear-group-option="${group.id}"><strong>${group.label}</strong><span>${group.range}</span></button>`).join("")}
+            </div>
+          </div>
           <button class="ghost-action ear-landscape-button" type="button" data-ear-landscape aria-pressed="false">横屏</button>
         </div>
       </div>
@@ -3352,22 +3354,31 @@ function setupEvents() {
       return;
     }
 
+    const groupMenuButton = event.target.closest("[data-ear-group-menu]");
+    if (groupMenuButton) {
+      const menu = els.earPianoExplorer.querySelector("[data-ear-group-options]");
+      const willOpen = menu?.hidden;
+      if (menu) menu.hidden = !willOpen;
+      groupMenuButton.setAttribute("aria-expanded", String(Boolean(willOpen)));
+      return;
+    }
+
+    const groupOption = event.target.closest("[data-ear-group-option]");
+    if (groupOption) {
+      earState.groupId = groupOption.dataset.earGroupOption;
+      resetEarQuestion();
+      renderEarPianoExplorer();
+      renderEarCoursePanel();
+      window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId, "smooth"));
+      return;
+    }
+
     const key = event.target.closest("[data-ear-midi]");
     if (!key) return;
     const midi = Number(key.dataset.earMidi);
     playEarSequence([midi]);
     key.classList.add("pressed");
     window.setTimeout(() => key.classList.remove("pressed"), 180);
-  });
-
-  els.earPianoExplorer?.addEventListener("change", event => {
-    const select = event.target.closest("[data-ear-group]");
-    if (!select) return;
-    earState.groupId = select.value;
-    resetEarQuestion();
-    renderEarPianoExplorer();
-    renderEarCoursePanel();
-    window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId, "smooth"));
   });
 
   els.earCourseTabs?.addEventListener("click", event => {
