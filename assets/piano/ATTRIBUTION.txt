@@ -1,0 +1,10 @@
+Salamander Grand Piano V3 samples
+
+Piano: Yamaha C5
+Recording author: Alexander Holm
+License: Creative Commons Attribution 3.0 (CC BY 3.0)
+Source: https://archive.org/details/SalamanderGrandPianoV3
+Web-optimized MP3 package: https://github.com/darosh/samples-piano-mp3
+
+The samples used by Qinxi are the medium velocity layer (velocity 8),
+limited to the C2-C6 range required by the current exercises.

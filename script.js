@@ -14,6 +14,31 @@ let currentUser = null;
 let isApplyingCloudData = false;
 let cloudSyncTimer = null;
 let cloudPullTimer = null;
+let pianoAudioContext = null;
+let currentPianoSource = null;
+let currentPianoGain = null;
+
+const pianoSampleBuffers = new Map();
+const pianoSampleLoads = new Map();
+const pianoSamples = [
+  { midi: 36, url: "./assets/piano/C2.mp3" },
+  { midi: 39, url: "./assets/piano/Ds2.mp3" },
+  { midi: 42, url: "./assets/piano/Fs2.mp3" },
+  { midi: 45, url: "./assets/piano/A2.mp3" },
+  { midi: 48, url: "./assets/piano/C3.mp3" },
+  { midi: 51, url: "./assets/piano/Ds3.mp3" },
+  { midi: 54, url: "./assets/piano/Fs3.mp3" },
+  { midi: 57, url: "./assets/piano/A3.mp3" },
+  { midi: 60, url: "./assets/piano/C4.mp3" },
+  { midi: 63, url: "./assets/piano/Ds4.mp3" },
+  { midi: 66, url: "./assets/piano/Fs4.mp3" },
+  { midi: 69, url: "./assets/piano/A4.mp3" },
+  { midi: 72, url: "./assets/piano/C5.mp3" },
+  { midi: 75, url: "./assets/piano/Ds5.mp3" },
+  { midi: 78, url: "./assets/piano/Fs5.mp3" },
+  { midi: 81, url: "./assets/piano/A5.mp3" },
+  { midi: 84, url: "./assets/piano/C6.mp3" }
+];
 
 const theoryLevels = [
   {
@@ -1556,36 +1581,88 @@ function noteFrequency(note) {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
-function playTone(freq, isCorrect) {
+function getPianoAudioContext() {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) return;
-  const context = new AudioContext();
-  const now = context.currentTime;
-  const master = context.createGain();
-  master.gain.setValueAtTime(0.0001, now);
-  master.gain.exponentialRampToValueAtTime(isCorrect ? 0.22 : 0.09, now + 0.015);
-  master.gain.exponentialRampToValueAtTime(0.0001, now + (isCorrect ? 0.9 : 0.22));
-  master.connect(context.destination);
+  if (!AudioContext) return null;
+  if (!pianoAudioContext) pianoAudioContext = new AudioContext();
+  return pianoAudioContext;
+}
 
-  const partials = isCorrect
-    ? [
-        { ratio: 1, gain: 1 },
-        { ratio: 2, gain: 0.35 },
-        { ratio: 3, gain: 0.14 }
-      ]
-    : [{ ratio: 1, gain: 1 }];
-
-  partials.forEach(partial => {
-    const osc = context.createOscillator();
-    const gain = context.createGain();
-    osc.type = isCorrect ? "triangle" : "square";
-    osc.frequency.value = (isCorrect ? freq : 110) * partial.ratio;
-    gain.gain.value = partial.gain;
-    osc.connect(gain);
-    gain.connect(master);
-    osc.start(now);
-    osc.stop(now + (isCorrect ? 0.92 : 0.24));
+function decodePianoSample(context, arrayBuffer) {
+  return new Promise((resolve, reject) => {
+    context.decodeAudioData(arrayBuffer, resolve, reject);
   });
+}
+
+function loadPianoSample(context, sample) {
+  if (pianoSampleBuffers.has(sample.url)) return Promise.resolve(pianoSampleBuffers.get(sample.url));
+  if (pianoSampleLoads.has(sample.url)) return pianoSampleLoads.get(sample.url);
+
+  const load = fetch(sample.url)
+    .then(response => {
+      if (!response.ok) throw new Error(`钢琴采样加载失败：${response.status}`);
+      return response.arrayBuffer();
+    })
+    .then(arrayBuffer => decodePianoSample(context, arrayBuffer))
+    .then(buffer => {
+      pianoSampleBuffers.set(sample.url, buffer);
+      pianoSampleLoads.delete(sample.url);
+      return buffer;
+    })
+    .catch(error => {
+      pianoSampleLoads.delete(sample.url);
+      throw error;
+    });
+
+  pianoSampleLoads.set(sample.url, load);
+  return load;
+}
+
+async function playPianoTone(freq) {
+  const context = getPianoAudioContext();
+  if (!context) return;
+  if (context.state === "suspended") await context.resume();
+
+  const targetMidi = 69 + 12 * Math.log2(freq / 440);
+  const sample = pianoSamples.reduce((closest, candidate) =>
+    Math.abs(candidate.midi - targetMidi) < Math.abs(closest.midi - targetMidi) ? candidate : closest
+  );
+  const buffer = await loadPianoSample(context, sample);
+  const now = context.currentTime;
+
+  if (currentPianoSource && currentPianoGain) {
+    currentPianoGain.gain.cancelScheduledValues(now);
+    currentPianoGain.gain.setValueAtTime(Math.max(currentPianoGain.gain.value, 0.0001), now);
+    currentPianoGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
+    try {
+      currentPianoSource.stop(now + 0.04);
+    } catch {}
+  }
+
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  source.buffer = buffer;
+  source.playbackRate.setValueAtTime(2 ** ((targetMidi - sample.midi) / 12), now);
+  gain.gain.setValueAtTime(0.58, now);
+  gain.gain.setValueAtTime(0.58, now + 1.25);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.05);
+  source.connect(gain);
+  gain.connect(context.destination);
+  source.start(now);
+  source.stop(now + 2.1);
+  currentPianoSource = source;
+  currentPianoGain = gain;
+  source.addEventListener("ended", () => {
+    if (currentPianoSource === source) {
+      currentPianoSource = null;
+      currentPianoGain = null;
+    }
+  });
+}
+
+function playTone(freq, isCorrect) {
+  if (!isCorrect) return;
+  playPianoTone(freq).catch(error => console.error("钢琴采样播放失败", error));
 }
 
 function renderPianoDrill() {

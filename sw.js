@@ -1,4 +1,4 @@
-const cacheName = "qinxi-v22";
+const cacheName = "qinxi-v23";
 const files = [
   "./",
   "./index.html",
@@ -9,7 +9,24 @@ const files = [
   "./assets/icon-192.png",
   "./assets/icon-512.png",
   "./assets/apple-touch-icon.png",
-  "./assets/Bravura.woff2"
+  "./assets/Bravura.woff2",
+  "./assets/piano/C2.mp3",
+  "./assets/piano/Ds2.mp3",
+  "./assets/piano/Fs2.mp3",
+  "./assets/piano/A2.mp3",
+  "./assets/piano/C3.mp3",
+  "./assets/piano/Ds3.mp3",
+  "./assets/piano/Fs3.mp3",
+  "./assets/piano/A3.mp3",
+  "./assets/piano/C4.mp3",
+  "./assets/piano/Ds4.mp3",
+  "./assets/piano/Fs4.mp3",
+  "./assets/piano/A4.mp3",
+  "./assets/piano/C5.mp3",
+  "./assets/piano/Ds5.mp3",
+  "./assets/piano/Fs5.mp3",
+  "./assets/piano/A5.mp3",
+  "./assets/piano/C6.mp3"
 ];
 
 self.addEventListener("install", event => {
