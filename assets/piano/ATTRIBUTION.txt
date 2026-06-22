@@ -7,4 +7,4 @@ Source: https://archive.org/details/SalamanderGrandPianoV3
 Web-optimized MP3 package: https://github.com/darosh/samples-piano-mp3
 
 The samples used by Qinxi are the medium velocity layer (velocity 8),
-limited to the C2-C6 range required by the current exercises.
+with anchors from A0 through C8 for the full 88-key piano range.

@@ -21,6 +21,11 @@ let currentPianoGain = null;
 const pianoSampleBuffers = new Map();
 const pianoSampleLoads = new Map();
 const pianoSamples = [
+  { midi: 21, url: "./assets/piano/A0.mp3" },
+  { midi: 24, url: "./assets/piano/C1.mp3" },
+  { midi: 27, url: "./assets/piano/Ds1.mp3" },
+  { midi: 30, url: "./assets/piano/Fs1.mp3" },
+  { midi: 33, url: "./assets/piano/A1.mp3" },
   { midi: 36, url: "./assets/piano/C2.mp3" },
   { midi: 39, url: "./assets/piano/Ds2.mp3" },
   { midi: 42, url: "./assets/piano/Fs2.mp3" },
@@ -37,7 +42,15 @@ const pianoSamples = [
   { midi: 75, url: "./assets/piano/Ds5.mp3" },
   { midi: 78, url: "./assets/piano/Fs5.mp3" },
   { midi: 81, url: "./assets/piano/A5.mp3" },
-  { midi: 84, url: "./assets/piano/C6.mp3" }
+  { midi: 84, url: "./assets/piano/C6.mp3" },
+  { midi: 87, url: "./assets/piano/Ds6.mp3" },
+  { midi: 90, url: "./assets/piano/Fs6.mp3" },
+  { midi: 93, url: "./assets/piano/A6.mp3" },
+  { midi: 96, url: "./assets/piano/C7.mp3" },
+  { midi: 99, url: "./assets/piano/Ds7.mp3" },
+  { midi: 102, url: "./assets/piano/Fs7.mp3" },
+  { midi: 105, url: "./assets/piano/A7.mp3" },
+  { midi: 108, url: "./assets/piano/C8.mp3" }
 ];
 
 const theoryLevels = [
@@ -214,6 +227,35 @@ const noteOptions = [
   { name: "A", numbered: "6", solfege: "La", semitone: 9 },
   { name: "B", numbered: "7", solfege: "Si", semitone: 11 }
 ];
+
+const pianoNoteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const earOctaveGroups = [
+  { id: "octave0", label: "次大字二组", range: "A0-B0", minMidi: 21, maxMidi: 23 },
+  { id: "octave1", label: "大字一组", range: "C1-B1", minMidi: 24, maxMidi: 35 },
+  { id: "octave2", label: "大字组", range: "C2-B2", minMidi: 36, maxMidi: 47 },
+  { id: "octave3", label: "小字组", range: "C3-B3", minMidi: 48, maxMidi: 59 },
+  { id: "octave4", label: "小字一组", range: "C4-B4", minMidi: 60, maxMidi: 71 },
+  { id: "octave5", label: "小字二组", range: "C5-B5", minMidi: 72, maxMidi: 83 },
+  { id: "octave6", label: "小字三组", range: "C6-B6", minMidi: 84, maxMidi: 95 },
+  { id: "octave7", label: "小字四组", range: "C7-B7", minMidi: 96, maxMidi: 107 },
+  { id: "octave8", label: "小字五组", range: "C8", minMidi: 108, maxMidi: 108 }
+];
+const earCourseDefinitions = [
+  { id: "single", number: "01", title: "单音辨认", summary: "从小字一组开始，听一个音并选出准确音名。" },
+  { id: "compare", number: "02", title: "音高比较", summary: "连续听两个或三个音，判断最高音或最低音。" },
+  { id: "staff", number: "03", title: "听音定位", summary: "听到单音后，在五线谱上标出它的位置。" }
+];
+
+const earState = {
+  groupId: "octave4",
+  course: "single",
+  compareCount: 2,
+  question: null,
+  status: "idle",
+  lastAnswer: null,
+  staffMark: null
+};
+let earPlaybackTimers = [];
 
 const pianoWhiteKeys = [
   { name: "C", octave: 4 },
@@ -743,6 +785,9 @@ const els = {
   theoryLevels: document.querySelector("#theoryLevels"),
   theoryCategories: document.querySelector("#theoryCategories"),
   theoryLevelDetail: document.querySelector("#theoryLevelDetail"),
+  earPianoExplorer: document.querySelector("#earPianoExplorer"),
+  earCourseTabs: document.querySelector("#earCourseTabs"),
+  earCoursePanel: document.querySelector("#earCoursePanel"),
   practiceLessons: document.querySelector("#practiceLessons"),
   theoryResources: document.querySelector("#theoryResources"),
   practiceResources: document.querySelector("#practiceResources"),
@@ -1729,6 +1774,366 @@ function playTone(freq, isCorrect) {
   playPianoTone(freq).catch(error => console.error("钢琴采样播放失败", error));
 }
 
+function midiToPianoNote(midi) {
+  const name = pianoNoteNames[midi % 12];
+  return {
+    midi,
+    name,
+    octave: Math.floor(midi / 12) - 1,
+    isBlack: name.includes("#"),
+    frequency: 440 * 2 ** ((midi - 69) / 12)
+  };
+}
+
+function getEarGroup(groupId = earState.groupId) {
+  return earOctaveGroups.find(group => group.id === groupId) || earOctaveGroups[4];
+}
+
+function getEarGroupNotes(groupId = earState.groupId, includeBlack = false) {
+  const group = getEarGroup(groupId);
+  return Array.from({ length: group.maxMidi - group.minMidi + 1 }, (_, index) => midiToPianoNote(group.minMidi + index))
+    .filter(note => includeBlack || !note.isBlack);
+}
+
+function shuffled(items) {
+  const copy = [...items];
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+  return copy;
+}
+
+function clearEarPlayback() {
+  earPlaybackTimers.forEach(timer => window.clearTimeout(timer));
+  earPlaybackTimers = [];
+}
+
+function playEarSequence(midis) {
+  clearEarPlayback();
+  midis.forEach((midi, index) => {
+    const playMidi = () => {
+      const note = midiToPianoNote(midi);
+      playTone(note.frequency, true);
+    };
+    if (index === 0) {
+      playMidi();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      playMidi();
+    }, index * 820);
+    earPlaybackTimers.push(timer);
+  });
+}
+
+function earStatsId() {
+  return earState.course === "staff" ? "ear-staff-C4" : `ear-${earState.course}-${earState.groupId}`;
+}
+
+function resetEarQuestion() {
+  clearEarPlayback();
+  earState.question = null;
+  earState.status = "idle";
+  earState.lastAnswer = null;
+  earState.staffMark = null;
+}
+
+function ensureEarQuestion() {
+  if (earState.question) return earState.question;
+
+  if (earState.course === "single") {
+    const target = randomItem(getEarGroupNotes());
+    earState.question = { target };
+  } else if (earState.course === "compare") {
+    const candidates = getEarGroupNotes(earState.groupId, true);
+    const count = Math.min(earState.compareCount, candidates.length);
+    const notes = shuffled(candidates).slice(0, count);
+    const direction = Math.random() < 0.5 ? "highest" : "lowest";
+    const targetMidi = direction === "highest"
+      ? Math.max(...notes.map(note => note.midi))
+      : Math.min(...notes.map(note => note.midi));
+    earState.question = {
+      notes,
+      direction,
+      answerIndex: notes.findIndex(note => note.midi === targetMidi)
+    };
+  } else {
+    const target = randomItem(getEarGroupNotes("octave4"));
+    const naturalIndex = noteOptions.findIndex(note => note.name === target.name);
+    earState.question = { target, step: naturalIndex - 2 };
+  }
+
+  return earState.question;
+}
+
+function earNoteMarkup(note) {
+  const naturalName = note.name.replace("#", "");
+  const numbered = note.isBlack ? "" : numberedPitchMarkup({ name: naturalName, octave: note.octave });
+  return `<span class="ear-note-name"><strong>${note.name}${note.octave}</strong>${numbered ? `<span>${numbered}</span>` : ""}</span>`;
+}
+
+function buildPiano88Keys() {
+  const whiteWidth = 34;
+  const blackWidth = 22;
+  let whiteIndex = 0;
+  const keys = [];
+
+  for (let midi = 21; midi <= 108; midi += 1) {
+    const note = midiToPianoNote(midi);
+    if (note.isBlack) {
+      keys.push({ ...note, left: whiteIndex * whiteWidth - blackWidth / 2, whiteIndex: null });
+    } else {
+      keys.push({ ...note, left: whiteIndex * whiteWidth, whiteIndex });
+      whiteIndex += 1;
+    }
+  }
+
+  return { keys, whiteWidth, blackWidth, width: whiteIndex * whiteWidth };
+}
+
+function updateEarVisibleGroup(scroller, piano) {
+  const center = scroller.scrollLeft + scroller.clientWidth / 2;
+  const whiteIndex = Math.max(0, Math.min(51, Math.floor(center / piano.whiteWidth)));
+  const centerKey = piano.keys.find(key => key.whiteIndex === whiteIndex);
+  const group = earOctaveGroups.find(item => centerKey && centerKey.midi >= item.minMidi && centerKey.midi <= item.maxMidi);
+  const label = scroller.closest(".ear-piano-tool")?.querySelector("[data-ear-visible-group]");
+  if (group && label) label.textContent = `${group.label} · ${group.range}`;
+}
+
+function scrollEarPianoToGroup(groupId = earState.groupId, behavior = "auto") {
+  const scroller = els.earPianoExplorer?.querySelector(".ear-keyboard-scroll");
+  if (!scroller) return;
+  const piano = buildPiano88Keys();
+  const group = getEarGroup(groupId);
+  const firstWhite = piano.keys.find(key => !key.isBlack && key.midi >= group.minMidi);
+  if (!firstWhite) return;
+  scroller.scrollTo({ left: Math.max(0, firstWhite.left - scroller.clientWidth * 0.18), behavior });
+}
+
+function renderEarPianoExplorer() {
+  if (!els.earPianoExplorer) return;
+  const piano = buildPiano88Keys();
+  const selectedGroup = getEarGroup();
+  const ruler = earOctaveGroups
+    .map(group => {
+      const whites = piano.keys.filter(key => !key.isBlack && key.midi >= group.minMidi && key.midi <= group.maxMidi);
+      const left = whites[0]?.left || 0;
+      const width = whites.length * piano.whiteWidth;
+      return `<div class="ear-octave-band ${group.id === earState.groupId ? "active" : ""}" style="left:${left}px;width:${width}px"><strong>${group.label}</strong><span>${group.range}</span></div>`;
+    })
+    .join("");
+  const whiteKeys = piano.keys
+    .filter(key => !key.isBlack)
+    .map(key => {
+      const isMiddleC = key.midi === 60;
+      const isSelected = key.midi >= selectedGroup.minMidi && key.midi <= selectedGroup.maxMidi;
+      return `<button class="ear-piano-key white ${isMiddleC ? "middle-c" : ""} ${isSelected ? "in-group" : ""}" style="left:${key.left}px;width:${piano.whiteWidth}px" type="button" data-ear-midi="${key.midi}" aria-label="播放 ${key.name}${key.octave}">
+        ${key.name === "C" ? `<span>${isMiddleC ? "中央 C" : `C${key.octave}`}</span>` : ""}
+      </button>`;
+    })
+    .join("");
+  const blackKeys = piano.keys
+    .filter(key => key.isBlack)
+    .map(key => `<button class="ear-piano-key black" style="left:${key.left}px;width:${piano.blackWidth}px" type="button" data-ear-midi="${key.midi}" aria-label="播放 ${key.name}${key.octave}"></button>`)
+    .join("");
+
+  els.earPianoExplorer.innerHTML = `
+    <section class="ear-piano-tool">
+      <div class="ear-piano-toolbar">
+        <div>
+          <span>当前可视音组</span>
+          <strong data-ear-visible-group>${selectedGroup.label} · ${selectedGroup.range}</strong>
+        </div>
+        <label>练习音组
+          <select data-ear-group>
+            ${earOctaveGroups.filter(group => group.maxMidi - group.minMidi >= 2).map(group => `<option value="${group.id}" ${group.id === earState.groupId ? "selected" : ""}>${group.label}（${group.range}）</option>`).join("")}
+          </select>
+        </label>
+      </div>
+      <div class="ear-keyboard-scroll" aria-label="88键钢琴，可左右滑动">
+        <div class="ear-keyboard-ruler" style="width:${piano.width}px">${ruler}</div>
+        <div class="ear-keyboard" style="width:${piano.width}px">${whiteKeys}${blackKeys}</div>
+      </div>
+      <p class="ear-scroll-hint">左右滑动浏览 88 键；横屏时可以看到更多琴键。点任意琴键即可听音。</p>
+    </section>
+  `;
+
+  const scroller = els.earPianoExplorer.querySelector(".ear-keyboard-scroll");
+  scroller?.addEventListener("scroll", () => updateEarVisibleGroup(scroller, piano), { passive: true });
+  window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId));
+}
+
+function renderEarCourseTabs() {
+  if (!els.earCourseTabs) return;
+  els.earCourseTabs.innerHTML = earCourseDefinitions
+    .map(course => `<button class="${course.id === earState.course ? "active" : ""}" type="button" data-ear-course="${course.id}"><span>${course.number}</span><strong>${course.title}</strong><small>${course.summary}</small></button>`)
+    .join("");
+}
+
+function renderEarStats() {
+  const stats = getPersistedLevelStats(earStatsId());
+  return `<div class="ear-practice-stats"><span>本课统计</span><strong>${getAccuracy(stats)}</strong></div>`;
+}
+
+function renderEarSingleCourse(question) {
+  const options = getEarGroupNotes();
+  const feedback = earState.status === "idle"
+    ? "先点播放，听清楚后再选择音名。"
+    : earState.status === "correct"
+      ? `答对了，这是 ${question.target.name}${question.target.octave}。`
+      : `你选的是 ${midiToPianoNote(Number(earState.lastAnswer)).name}${midiToPianoNote(Number(earState.lastAnswer)).octave}，正确答案是 ${question.target.name}${question.target.octave}。`;
+  return `
+    <div class="ear-question-head">
+      <div><span>课程 01</span><h4>听一个音，认出它</h4></div>
+      ${renderEarStats()}
+    </div>
+    <div class="ear-listen-row"><button class="primary-action" type="button" data-ear-play>播放题目</button><span>${getEarGroup().label} · ${getEarGroup().range}</span></div>
+    <div class="ear-answer-grid single">
+      ${options.map(note => {
+        const selected = Number(earState.lastAnswer) === note.midi;
+        const stateClass = earState.status === "idle" || !selected ? "" : earState.status;
+        return `<button class="${stateClass}" type="button" data-ear-answer-midi="${note.midi}" ${earState.status !== "idle" ? "disabled" : ""}>${earNoteMarkup(note)}</button>`;
+      }).join("")}
+    </div>
+    <p class="ear-feedback ${earState.status}">${feedback}</p>
+    ${earState.status !== "idle" ? `<button class="primary-action ear-next" type="button" data-ear-next>下一题</button>` : ""}
+  `;
+}
+
+function renderEarCompareCourse(question) {
+  const directionLabel = question.direction === "highest" ? "最高" : "最低";
+  const answerNote = question.notes[question.answerIndex];
+  const feedback = earState.status === "idle"
+    ? `仔细听完整组音，再判断第几个音${directionLabel}。`
+    : earState.status === "correct"
+      ? `答对了，第 ${question.answerIndex + 1} 个音${directionLabel}。`
+      : `正确答案是第 ${question.answerIndex + 1} 个音（${answerNote.name}${answerNote.octave}）。`;
+  return `
+    <div class="ear-question-head">
+      <div><span>课程 02</span><h4>哪个音${directionLabel}？</h4></div>
+      ${renderEarStats()}
+    </div>
+    <div class="ear-compare-settings" aria-label="音符数量">
+      <span>连续音数量</span>
+      <button class="${earState.compareCount === 2 ? "active" : ""}" type="button" data-ear-count="2">2 个音</button>
+      <button class="${earState.compareCount === 3 ? "active" : ""}" type="button" data-ear-count="3">3 个音</button>
+    </div>
+    <div class="ear-listen-row"><button class="primary-action" type="button" data-ear-play>依次播放</button><span>${getEarGroup().label} · ${getEarGroup().range}</span></div>
+    <div class="ear-answer-grid compare">
+      ${question.notes.map((note, index) => {
+        const selected = Number(earState.lastAnswer) === index;
+        const stateClass = earState.status === "idle" || !selected ? "" : earState.status;
+        return `<button class="${stateClass}" type="button" data-ear-answer-index="${index}" ${earState.status !== "idle" ? "disabled" : ""}><strong>第 ${index + 1} 个</strong><span>音 ${index + 1}</span></button>`;
+      }).join("")}
+    </div>
+    <p class="ear-feedback ${earState.status}">${feedback}</p>
+    ${earState.status !== "idle" ? `<button class="primary-action ear-next" type="button" data-ear-next>下一题</button>` : ""}
+  `;
+}
+
+function renderEarStaffCourse(question) {
+  const bottomLineY = 154;
+  const stepGap = 12;
+  const lines = [0, 2, 4, 6, 8].map(step => `<line x1="52" y1="${staffMarkY(step, bottomLineY, stepGap)}" x2="410" y2="${staffMarkY(step, bottomLineY, stepGap)}" stroke="#333" stroke-width="1.7" />`).join("");
+  const mark = earState.staffMark;
+  const markMarkup = mark ? (() => {
+    const y = staffMarkY(mark.step, bottomLineY, stepGap);
+    const correct = mark.step === question.step;
+    return `${staffLedgerLinesForMark(mark.x, mark.step, bottomLineY, stepGap)}<ellipse cx="${mark.x}" cy="${y}" rx="18" ry="12" fill="${correct ? "#2e9b5f" : "#d93636"}" transform="rotate(-18 ${mark.x} ${y})" />`;
+  })() : "";
+  const correctionMarkup = earState.status === "wrong"
+    ? `${staffLedgerLinesForMark(342, question.step, bottomLineY, stepGap)}<ellipse cx="342" cy="${staffMarkY(question.step, bottomLineY, stepGap)}" rx="18" ry="12" fill="#2e9b5f" transform="rotate(-18 342 ${staffMarkY(question.step, bottomLineY, stepGap)})" />`
+    : "";
+  const clickedPosition = mark ? staffPositionFromStep("treble", mark.step) : null;
+  const feedback = earState.status === "idle"
+    ? "播放题目后，点击最近的线或间。"
+    : earState.status === "correct"
+      ? `答对了，这是 ${question.target.name}${question.target.octave}。`
+      : `红色是你标的 ${clickedPosition.name}${clickedPosition.octave}，绿色是正确的 ${question.target.name}${question.target.octave}。`;
+  return `
+    <div class="ear-question-head">
+      <div><span>课程 03</span><h4>听音后标到五线谱</h4></div>
+      ${renderEarStats()}
+    </div>
+    <div class="ear-listen-row"><button class="primary-action" type="button" data-ear-play>播放题目</button><span>第一阶段 · 小字一组</span></div>
+    <div class="ear-staff-stage">
+      <svg viewBox="0 0 450 220" role="img" aria-label="听音后点击高音谱表作答" data-ear-staff data-bottom-line-y="${bottomLineY}" data-step-gap="${stepGap}" data-min-step="-2" data-max-step="4">
+        ${lines}
+        ${staffClefMarkup("treble", 62, 130, 24)}
+        ${markMarkup}${correctionMarkup}
+      </svg>
+    </div>
+    <p class="ear-feedback ${earState.status}">${feedback}</p>
+    ${earState.status !== "idle" ? `<button class="primary-action ear-next" type="button" data-ear-next>下一题</button>` : ""}
+  `;
+}
+
+function renderEarCoursePanel() {
+  if (!els.earCoursePanel) return;
+  const question = ensureEarQuestion();
+  const content = earState.course === "single"
+    ? renderEarSingleCourse(question)
+    : earState.course === "compare"
+      ? renderEarCompareCourse(question)
+      : renderEarStaffCourse(question);
+  els.earCoursePanel.innerHTML = `<section class="ear-practice-tool">${content}</section>`;
+}
+
+function renderEarTraining() {
+  renderEarPianoExplorer();
+  renderEarCourseTabs();
+  renderEarCoursePanel();
+}
+
+function playCurrentEarQuestion() {
+  const question = ensureEarQuestion();
+  if (earState.course === "compare") playEarSequence(question.notes.map(note => note.midi));
+  else playEarSequence([question.target.midi]);
+}
+
+function answerEarSingle(midi) {
+  if (earState.status !== "idle") return;
+  const question = ensureEarQuestion();
+  const isCorrect = midi === question.target.midi;
+  earState.lastAnswer = midi;
+  earState.status = isCorrect ? "correct" : "wrong";
+  upsertAppLearningRecord();
+  recordQuestionAttempt(earStatsId(), isCorrect);
+  if (isCorrect) playEarSequence([question.target.midi]);
+  renderEarCoursePanel();
+}
+
+function answerEarCompare(index) {
+  if (earState.status !== "idle") return;
+  const question = ensureEarQuestion();
+  const isCorrect = index === question.answerIndex;
+  earState.lastAnswer = index;
+  earState.status = isCorrect ? "correct" : "wrong";
+  upsertAppLearningRecord();
+  recordQuestionAttempt(earStatsId(), isCorrect);
+  renderEarCoursePanel();
+}
+
+function answerEarStaff(mark) {
+  if (earState.status !== "idle" || !mark) return;
+  const question = ensureEarQuestion();
+  const isCorrect = mark.step === question.step;
+  earState.staffMark = mark;
+  earState.status = isCorrect ? "correct" : "wrong";
+  upsertAppLearningRecord();
+  recordQuestionAttempt(earStatsId(), isCorrect);
+  if (isCorrect) playEarSequence([question.target.midi]);
+  renderEarCoursePanel();
+}
+
+function nextEarQuestion() {
+  resetEarQuestion();
+  ensureEarQuestion();
+  renderEarCoursePanel();
+  playCurrentEarQuestion();
+}
+
 function renderPianoDrill() {
   ensureDrillQuestion("keyboard");
   const state = drillState.keyboard;
@@ -2001,6 +2406,7 @@ function renderDrill(level) {
 
 function renderLessons() {
   renderTheoryLevels();
+  renderEarTraining();
 
   els.practiceLessons.innerHTML = practiceLessons
     .map(
@@ -2895,6 +3301,70 @@ function setupEvents() {
 
   document.querySelectorAll("[data-go]").forEach(button => {
     button.addEventListener("click", () => switchTab(button.dataset.go));
+  });
+
+  els.earPianoExplorer?.addEventListener("click", event => {
+    const key = event.target.closest("[data-ear-midi]");
+    if (!key) return;
+    const midi = Number(key.dataset.earMidi);
+    playEarSequence([midi]);
+    key.classList.add("pressed");
+    window.setTimeout(() => key.classList.remove("pressed"), 180);
+  });
+
+  els.earPianoExplorer?.addEventListener("change", event => {
+    const select = event.target.closest("[data-ear-group]");
+    if (!select) return;
+    earState.groupId = select.value;
+    resetEarQuestion();
+    renderEarPianoExplorer();
+    renderEarCoursePanel();
+    window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId, "smooth"));
+  });
+
+  els.earCourseTabs?.addEventListener("click", event => {
+    const button = event.target.closest("[data-ear-course]");
+    if (!button) return;
+    earState.course = button.dataset.earCourse;
+    resetEarQuestion();
+    renderEarCourseTabs();
+    renderEarCoursePanel();
+  });
+
+  els.earCoursePanel?.addEventListener("click", event => {
+    const staff = event.target.closest("[data-ear-staff]");
+    if (staff) {
+      answerEarStaff(staffMarkFromSvgEvent(event));
+      return;
+    }
+
+    const playButton = event.target.closest("[data-ear-play]");
+    if (playButton) {
+      playCurrentEarQuestion();
+      return;
+    }
+
+    const midiAnswer = event.target.closest("[data-ear-answer-midi]");
+    if (midiAnswer) {
+      answerEarSingle(Number(midiAnswer.dataset.earAnswerMidi));
+      return;
+    }
+
+    const indexAnswer = event.target.closest("[data-ear-answer-index]");
+    if (indexAnswer) {
+      answerEarCompare(Number(indexAnswer.dataset.earAnswerIndex));
+      return;
+    }
+
+    const countButton = event.target.closest("[data-ear-count]");
+    if (countButton) {
+      earState.compareCount = Number(countButton.dataset.earCount);
+      resetEarQuestion();
+      renderEarCoursePanel();
+      return;
+    }
+
+    if (event.target.closest("[data-ear-next]")) nextEarQuestion();
   });
 
   els.theoryLevels.addEventListener("click", event => {

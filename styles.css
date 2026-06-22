@@ -207,6 +207,434 @@ button {
   background: var(--accent-soft);
 }
 
+.ear-training-section {
+  margin-bottom: 30px;
+  scroll-margin-top: 18px;
+}
+
+.ear-training-heading {
+  margin-bottom: 14px;
+}
+
+.ear-training-heading h3,
+.ear-training-heading p {
+  margin: 0;
+}
+
+.ear-training-heading h3 {
+  font-size: 30px;
+}
+
+.ear-training-heading p:not(.eyebrow) {
+  max-width: 720px;
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.ear-piano-tool,
+.ear-practice-tool {
+  border: 1px solid rgba(123, 105, 79, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.ear-piano-tool {
+  overflow: hidden;
+}
+
+.ear-piano-toolbar {
+  display: flex;
+  gap: 18px;
+  align-items: end;
+  justify-content: space-between;
+  padding: 16px 18px;
+}
+
+.ear-piano-toolbar > div span,
+.ear-piano-toolbar label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ear-piano-toolbar > div strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.ear-piano-toolbar select {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 36px 0 12px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.ear-keyboard-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-color: #aebdb3 transparent;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ear-keyboard-ruler {
+  position: relative;
+  height: 54px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #eef3ee;
+}
+
+.ear-octave-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: grid;
+  align-content: center;
+  overflow: hidden;
+  border-right: 1px solid #c8d3ca;
+  padding: 0 7px;
+  color: #55635b;
+}
+
+.ear-octave-band.active {
+  background: #dceade;
+  color: var(--accent);
+}
+
+.ear-octave-band strong,
+.ear-octave-band span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ear-octave-band strong {
+  font-size: 12px;
+}
+
+.ear-octave-band span {
+  font-size: 10px;
+}
+
+.ear-keyboard {
+  position: relative;
+  height: 176px;
+  background: #202321;
+}
+
+.ear-piano-key {
+  position: absolute;
+  top: 0;
+  border-radius: 0 0 4px 4px;
+  padding: 0;
+  transition: background-color 0.12s ease;
+}
+
+.ear-piano-key.white {
+  z-index: 1;
+  height: 170px;
+  border: 1px solid #aeb2af;
+  border-top: 0;
+  background: #fff;
+  color: #38413c;
+}
+
+.ear-piano-key.white.in-group {
+  background: #f5faf6;
+  box-shadow: inset 0 -4px 0 #75a08b;
+}
+
+.ear-piano-key.white.middle-c {
+  box-shadow: inset 0 -5px 0 var(--warm);
+}
+
+.ear-piano-key.black {
+  z-index: 2;
+  height: 106px;
+  border: 1px solid #0e100f;
+  background: #202321;
+  box-shadow: inset 0 -7px 8px rgba(255, 255, 255, 0.08), 0 3px 4px rgba(0, 0, 0, 0.28);
+}
+
+.ear-piano-key.white.pressed {
+  background: #dceade;
+}
+
+.ear-piano-key.black.pressed {
+  background: #557162;
+}
+
+.ear-piano-key.white > span {
+  position: absolute;
+  right: 2px;
+  bottom: 10px;
+  left: 2px;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.ear-piano-key.middle-c > span {
+  color: #865d2c;
+}
+
+.ear-scroll-hint {
+  margin: 0;
+  padding: 10px 18px 14px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ear-course-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0 10px;
+}
+
+.ear-course-tabs button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 9px;
+  min-height: 88px;
+  align-content: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 253, 248, 0.86);
+  color: var(--ink);
+  text-align: left;
+}
+
+.ear-course-tabs button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.ear-course-tabs button > span {
+  grid-row: 1 / 3;
+  color: var(--warm);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.ear-course-tabs button.active > span,
+.ear-course-tabs button.active small {
+  color: #dceade;
+}
+
+.ear-course-tabs strong {
+  font-size: 16px;
+}
+
+.ear-course-tabs small {
+  grid-column: 2;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ear-practice-tool {
+  min-height: 320px;
+  padding: 20px;
+}
+
+.ear-question-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.ear-question-head h4,
+.ear-question-head p {
+  margin: 0;
+}
+
+.ear-question-head h4 {
+  margin-top: 4px;
+  font-size: 24px;
+}
+
+.ear-question-head > div > span,
+.ear-practice-stats span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ear-practice-stats {
+  display: grid;
+  justify-items: end;
+}
+
+.ear-practice-stats strong {
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.ear-listen-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 18px 0;
+}
+
+.ear-listen-row > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ear-answer-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.ear-answer-grid.single {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.ear-answer-grid.compare {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 620px;
+}
+
+.ear-answer-grid button {
+  min-height: 72px;
+  border: 1px solid #cfd4d0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.ear-answer-grid button.correct {
+  border-color: #2e9b5f;
+  background: #d9f0e2;
+  color: #176b3e;
+}
+
+.ear-answer-grid button.wrong {
+  border-color: #d93636;
+  background: #fae0e0;
+  color: #a22323;
+}
+
+.ear-answer-grid button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.ear-note-name {
+  display: grid;
+  gap: 2px;
+  place-items: center;
+}
+
+.ear-note-name > strong {
+  font-size: 19px;
+}
+
+.ear-note-name > span {
+  display: block;
+  min-height: 30px;
+  color: var(--muted);
+}
+
+.ear-feedback {
+  min-height: 26px;
+  margin: 16px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.ear-feedback.correct {
+  color: #176b3e;
+}
+
+.ear-feedback.wrong {
+  color: #a22323;
+}
+
+.ear-next {
+  min-width: 128px;
+  margin-top: 14px;
+}
+
+.ear-compare-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.ear-compare-settings > span {
+  margin-right: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ear-compare-settings button {
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.ear-compare-settings button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ear-answer-grid.compare button {
+  display: grid;
+  gap: 4px;
+  place-items: center;
+}
+
+.ear-answer-grid.compare button span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ear-staff-stage {
+  overflow: hidden;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #f4f4f4;
+}
+
+.ear-staff-stage svg {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1636,7 +2064,52 @@ button {
 
   .learning-jumps a {
     flex: 1;
+    min-width: 0;
+    padding: 9px 6px;
+    font-size: 13px;
     text-align: center;
+  }
+
+  .ear-piano-toolbar {
+    display: grid;
+    align-items: start;
+  }
+
+  .ear-piano-toolbar label,
+  .ear-piano-toolbar select {
+    width: 100%;
+  }
+
+  .ear-course-tabs {
+    display: flex;
+    max-width: calc(100vw - 32px);
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ear-course-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ear-course-tabs button {
+    flex: 0 0 190px;
+    scroll-snap-align: start;
+  }
+
+  .ear-practice-tool {
+    min-height: 360px;
+    padding: 16px;
+  }
+
+  .ear-question-head h4 {
+    font-size: 21px;
+  }
+
+  .ear-answer-grid.single {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .stats-grid,
@@ -1836,6 +2309,19 @@ button {
   .drill-options {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 14px;
+  }
+
+  .ear-answer-grid.single,
+  .ear-answer-grid.compare {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ear-question-head {
+    display: grid;
+  }
+
+  .ear-practice-stats {
+    justify-items: start;
   }
 
   .drill-stage {
