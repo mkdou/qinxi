@@ -2128,6 +2128,35 @@ function renderEarSingleCourse(question) {
   `;
 }
 
+function displayPianoPitch(note) {
+  return `${note.name.replace("#", "♯")}${note.octave}`;
+}
+
+function renderEarSequenceReveal(question) {
+  if (earState.status === "idle") return "";
+  const directionLabel = question.direction === "highest" ? "最高音" : "最低音";
+  return `
+    <div class="ear-sequence-reveal count-${question.notes.length}" aria-label="本题全部音高">
+      ${question.notes.map((note, index) => {
+        const previous = question.notes[index - 1];
+        const relation = !previous ? "起始音" : note.midi > previous.midi ? "比前一个高" : "比前一个低";
+        const isTarget = index === question.answerIndex;
+        return `
+          <div class="ear-sequence-note ${isTarget ? "target" : ""}">
+            <span>第 ${index + 1} 个</span>
+            <div>
+              <strong>${displayPianoPitch(note)}</strong>
+              ${note.isBlack ? "" : numberedPitchMarkup({ name: note.name, octave: note.octave })}
+            </div>
+            <small>${relation}</small>
+            ${isTarget ? `<em>${directionLabel}</em>` : ""}
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function renderEarCompareCourse(question) {
   const directionLabel = question.direction === "highest" ? "最高" : "最低";
   const answerNote = question.notes[question.answerIndex];
@@ -2135,7 +2164,7 @@ function renderEarCompareCourse(question) {
     ? `仔细听完整组音，再判断第几个音${directionLabel}。`
     : earState.status === "correct"
       ? `答对了，第 ${question.answerIndex + 1} 个音${directionLabel}。`
-      : `正确答案是第 ${question.answerIndex + 1} 个音（${answerNote.name}${answerNote.octave}）。`;
+      : `正确答案是第 ${question.answerIndex + 1} 个音（${displayPianoPitch(answerNote)}）。`;
   return `
     <div class="ear-question-head">
       <div><span>课程 02</span><h4>哪个音${directionLabel}？</h4></div>
@@ -2155,6 +2184,7 @@ function renderEarCompareCourse(question) {
       }).join("")}
     </div>
     <p class="ear-feedback ${earState.status}">${feedback}</p>
+    ${renderEarSequenceReveal(question)}
     ${earState.status !== "idle" ? `<button class="primary-action ear-next" type="button" data-ear-next>下一题</button>` : ""}
   `;
 }
