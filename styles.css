@@ -268,6 +268,18 @@ button {
   font-size: 20px;
 }
 
+.ear-audio-status {
+  display: block;
+  margin-top: 4px;
+  color: #8a6a43;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ear-audio-status.ready {
+  color: #2e7a55;
+}
+
 .ear-group-toggle {
   min-height: 40px;
   width: 100%;

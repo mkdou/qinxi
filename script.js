@@ -20,6 +20,8 @@ let currentPianoGain = null;
 
 const pianoSampleBuffers = new Map();
 const pianoSampleLoads = new Map();
+const pianoSampleData = new Map();
+const pianoSampleDataLoads = new Map();
 const pianoSamples = [
   { midi: 21, url: "./assets/piano/A0.mp3" },
   { midi: 24, url: "./assets/piano/C1.mp3" },
@@ -256,6 +258,8 @@ const earState = {
   staffMark: null
 };
 let earPlaybackTimers = [];
+let pianoWarmGroupId = null;
+let pianoWarmStatus = "idle";
 
 const pianoWhiteKeys = [
   { name: "C", octave: 4 },
@@ -1703,16 +1707,35 @@ function decodePianoSample(context, arrayBuffer) {
   });
 }
 
-function loadPianoSample(context, sample) {
-  if (pianoSampleBuffers.has(sample.url)) return Promise.resolve(pianoSampleBuffers.get(sample.url));
-  if (pianoSampleLoads.has(sample.url)) return pianoSampleLoads.get(sample.url);
+function fetchPianoSampleData(sample) {
+  if (pianoSampleData.has(sample.url)) return Promise.resolve(pianoSampleData.get(sample.url));
+  if (pianoSampleDataLoads.has(sample.url)) return pianoSampleDataLoads.get(sample.url);
 
   const load = fetch(sample.url)
     .then(response => {
       if (!response.ok) throw new Error(`钢琴采样加载失败：${response.status}`);
       return response.arrayBuffer();
     })
-    .then(arrayBuffer => decodePianoSample(context, arrayBuffer))
+    .then(arrayBuffer => {
+      pianoSampleData.set(sample.url, arrayBuffer);
+      pianoSampleDataLoads.delete(sample.url);
+      return arrayBuffer;
+    })
+    .catch(error => {
+      pianoSampleDataLoads.delete(sample.url);
+      throw error;
+    });
+
+  pianoSampleDataLoads.set(sample.url, load);
+  return load;
+}
+
+function loadPianoSample(context, sample) {
+  if (pianoSampleBuffers.has(sample.url)) return Promise.resolve(pianoSampleBuffers.get(sample.url));
+  if (pianoSampleLoads.has(sample.url)) return pianoSampleLoads.get(sample.url);
+
+  const load = fetchPianoSampleData(sample)
+    .then(arrayBuffer => decodePianoSample(context, arrayBuffer.slice(0)))
     .then(buffer => {
       pianoSampleBuffers.set(sample.url, buffer);
       pianoSampleLoads.delete(sample.url);
@@ -1727,15 +1750,67 @@ function loadPianoSample(context, sample) {
   return load;
 }
 
+function nearestPianoSample(midi) {
+  return pianoSamples.reduce((closest, candidate) =>
+    Math.abs(candidate.midi - midi) < Math.abs(closest.midi - midi) ? candidate : closest
+  );
+}
+
+function pianoSamplesForGroup(groupId) {
+  const notes = getEarGroupNotes(groupId, true);
+  return [...new Map(notes.map(note => {
+    const sample = nearestPianoSample(note.midi);
+    return [sample.url, sample];
+  })).values()];
+}
+
+function updateEarAudioStatus(message) {
+  const status = els.earPianoExplorer?.querySelector("[data-ear-audio-status]");
+  if (!status) return;
+  status.textContent = message || (pianoWarmStatus === "ready" && pianoWarmGroupId === earState.groupId ? "音色已就绪" : "首次播放前会准备音色");
+  status.classList.toggle("ready", pianoWarmStatus === "ready" && pianoWarmGroupId === earState.groupId);
+}
+
+function prefetchPianoGroup(groupId = "octave4") {
+  return Promise.all(pianoSamplesForGroup(groupId).map(sample => fetchPianoSampleData(sample))).catch(error => {
+    console.error("钢琴采样预取失败", error);
+  });
+}
+
+async function warmPianoGroup(groupId = earState.groupId) {
+  if (pianoWarmStatus === "ready" && pianoWarmGroupId === groupId) {
+    updateEarAudioStatus();
+    return;
+  }
+
+  pianoWarmGroupId = groupId;
+  pianoWarmStatus = "loading";
+  updateEarAudioStatus("音色准备中…");
+  try {
+    const context = getPianoAudioContext();
+    if (!context) throw new Error("当前浏览器不支持音频播放");
+    if (context.state === "suspended") await context.resume();
+    await Promise.all(pianoSamplesForGroup(groupId).map(sample => loadPianoSample(context, sample)));
+    if (pianoWarmGroupId === groupId) {
+      pianoWarmStatus = "ready";
+      updateEarAudioStatus("音色已就绪");
+    }
+  } catch (error) {
+    if (pianoWarmGroupId === groupId) {
+      pianoWarmStatus = "error";
+      updateEarAudioStatus("音色准备失败，请再点一次");
+    }
+    console.error("钢琴音色准备失败", error);
+  }
+}
+
 async function playPianoTone(freq) {
   const context = getPianoAudioContext();
   if (!context) return;
   if (context.state === "suspended") await context.resume();
 
   const targetMidi = 69 + 12 * Math.log2(freq / 440);
-  const sample = pianoSamples.reduce((closest, candidate) =>
-    Math.abs(candidate.midi - targetMidi) < Math.abs(closest.midi - targetMidi) ? candidate : closest
-  );
+  const sample = nearestPianoSample(targetMidi);
   const buffer = await loadPianoSample(context, sample);
   const now = context.currentTime;
 
@@ -1771,7 +1846,10 @@ async function playPianoTone(freq) {
 
 function playTone(freq, isCorrect) {
   if (!isCorrect) return;
-  playPianoTone(freq).catch(error => console.error("钢琴采样播放失败", error));
+  playPianoTone(freq).catch(error => {
+    updateEarAudioStatus("音频加载失败，请再点一次");
+    console.error("钢琴采样播放失败", error);
+  });
 }
 
 function midiToPianoNote(midi) {
@@ -1977,6 +2055,7 @@ function renderEarPianoExplorer() {
         <div>
           <span>当前可视音组</span>
           <strong data-ear-visible-group>${selectedGroup.label} · ${selectedGroup.range}</strong>
+          <small class="ear-audio-status ${pianoWarmStatus === "ready" && pianoWarmGroupId === earState.groupId ? "ready" : ""}" data-ear-audio-status>${pianoWarmStatus === "ready" && pianoWarmGroupId === earState.groupId ? "音色已就绪" : "首次播放前会准备音色"}</small>
         </div>
         <div class="ear-piano-toolbar-actions">
           <div class="ear-group-picker">
@@ -3369,6 +3448,7 @@ function setupEvents() {
       resetEarQuestion();
       renderEarPianoExplorer();
       renderEarCoursePanel();
+      warmPianoGroup(earState.groupId);
       window.requestAnimationFrame(() => scrollEarPianoToGroup(earState.groupId, "smooth"));
       return;
     }
@@ -3376,6 +3456,7 @@ function setupEvents() {
     const key = event.target.closest("[data-ear-midi]");
     if (!key) return;
     const midi = Number(key.dataset.earMidi);
+    warmPianoGroup(earState.groupId);
     playEarSequence([midi]);
     key.classList.add("pressed");
     window.setTimeout(() => key.classList.remove("pressed"), 180);
@@ -3708,12 +3789,14 @@ function setupEvents() {
 }
 
 function init() {
+  prefetchPianoGroup("octave4");
   els.practiceDate.value = todayISO();
   renderLessons();
   renderScores();
   renderImports();
   renderStats();
   setupEvents();
+  document.addEventListener("pointerdown", () => warmPianoGroup("octave4"), { once: true, capture: true });
   initCloudSync();
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
