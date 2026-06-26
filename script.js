@@ -244,8 +244,9 @@ const earOctaveGroups = [
 ];
 const earCourseDefinitions = [
   { id: "single", number: "01", title: "单音辨认", summary: "从小字一组开始，听一个音并选出准确音名。" },
-  { id: "compare", number: "02", title: "音高比较", summary: "连续听两个或三个音，判断最高音或最低音。" },
-  { id: "staff", number: "03", title: "听音定位", summary: "听到单音后，在五线谱上标出它的位置。" }
+  { id: "compare-basic", number: "02", title: "分组高低", summary: "只听当前音组的白键，先判断哪个音更高或更低。" },
+  { id: "compare", number: "03", title: "混合高低", summary: "加入黑键，连续听两个或三个音，判断最高音或最低音。" },
+  { id: "staff", number: "04", title: "听音定位", summary: "听到单音后，在五线谱上标出它的位置。" }
 ];
 
 const earState = {
@@ -1924,8 +1925,8 @@ function ensureEarQuestion() {
   if (earState.course === "single") {
     const target = randomItem(getEarGroupNotes());
     earState.question = { target };
-  } else if (earState.course === "compare") {
-    const candidates = getEarGroupNotes(earState.groupId, true);
+  } else if (earState.course === "compare-basic" || earState.course === "compare") {
+    const candidates = getEarGroupNotes(earState.groupId, earState.course === "compare");
     const count = Math.min(earState.compareCount, candidates.length);
     const notes = shuffled(candidates).slice(0, count);
     const direction = Math.random() < 0.5 ? "highest" : "lowest";
@@ -2168,6 +2169,8 @@ function renderEarSequenceReveal(question) {
 }
 
 function renderEarCompareCourse(question) {
+  const course = earCourseDefinitions.find(item => item.id === earState.course);
+  const isAdvanced = earState.course === "compare";
   const directionLabel = question.direction === "highest" ? "最高" : "最低";
   const answerNote = question.notes[question.answerIndex];
   const feedback = earState.status === "idle"
@@ -2177,7 +2180,11 @@ function renderEarCompareCourse(question) {
       : `正确答案是第 ${question.answerIndex + 1} 个音（${displayPianoPitch(answerNote)}）。`;
   return `
     <div class="ear-question-head">
-      <div><span>课程 02</span><h4>哪个音${directionLabel}？</h4></div>
+      <div>
+        <span>课程 ${course?.number || "02"}</span>
+        <h4>哪个音${directionLabel}？</h4>
+        <p>${isAdvanced ? "进阶：当前音组内会加入黑键。" : "基础：当前音组内只出现白键。"}</p>
+      </div>
       ${renderEarStats()}
     </div>
     <div class="ear-compare-settings" aria-label="音符数量">
@@ -2220,7 +2227,7 @@ function renderEarStaffCourse(question) {
       : `红色是你标的 ${clickedPosition.name}${clickedPosition.octave}，绿色是正确的 ${question.target.name}${question.target.octave}。`;
   return `
     <div class="ear-question-head">
-      <div><span>课程 03</span><h4>听音后标到五线谱</h4></div>
+      <div><span>课程 04</span><h4>听音后标到五线谱</h4></div>
       ${renderEarStats()}
     </div>
     <div class="ear-listen-row"><button class="primary-action" type="button" data-ear-play>播放题目</button><span>第一阶段 · 小字一组</span></div>
@@ -2241,7 +2248,7 @@ function renderEarCoursePanel() {
   const question = ensureEarQuestion();
   const content = earState.course === "single"
     ? renderEarSingleCourse(question)
-    : earState.course === "compare"
+    : earState.course === "compare-basic" || earState.course === "compare"
       ? renderEarCompareCourse(question)
       : renderEarStaffCourse(question);
   els.earCoursePanel.innerHTML = `<section class="ear-practice-tool">${content}</section>`;
@@ -2255,7 +2262,7 @@ function renderEarTraining() {
 
 function playCurrentEarQuestion() {
   const question = ensureEarQuestion();
-  if (earState.course === "compare") playEarSequence(question.notes.map(note => note.midi));
+  if (earState.course === "compare-basic" || earState.course === "compare") playEarSequence(question.notes.map(note => note.midi));
   else playEarSequence([question.target.midi]);
 }
 
