@@ -486,19 +486,90 @@ body.staff-landscape-mode .bottom-nav {
   }
 
   body.staff-landscape-mode .staff-drill-card {
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 100vw;
     grid-template-rows: auto auto auto auto 1fr auto;
-    grid-template-columns: 1fr;
+    grid-template-columns: 132px 1fr;
+    width: 100vh;
+    height: 100vw;
+    transform: rotate(90deg);
+    transform-origin: top left;
   }
 
   body.staff-landscape-mode .drill-stats,
   body.staff-landscape-mode .clef-switch,
   body.staff-landscape-mode .staff-placement-prompt,
   body.staff-landscape-mode .staff-tool-actions,
-  body.staff-landscape-mode .staff-placement-stage,
   body.staff-landscape-mode .drill-hint,
   body.staff-landscape-mode .staff-next-row {
     grid-column: 1;
     grid-row: auto;
+    min-width: 0;
+  }
+
+  body.staff-landscape-mode .drill-stats {
+    gap: 8px;
+    padding: 7px 6px;
+  }
+
+  body.staff-landscape-mode .drill-stats strong {
+    font-size: 17px;
+  }
+
+  body.staff-landscape-mode .clef-switch {
+    gap: 6px;
+    padding: 7px 6px;
+  }
+
+  body.staff-landscape-mode .clef-switch button,
+  body.staff-landscape-mode .staff-tool-actions .ghost-action,
+  body.staff-landscape-mode .staff-next-row .primary-action {
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  body.staff-landscape-mode .staff-placement-prompt {
+    gap: 6px;
+    padding: 7px 6px;
+  }
+
+  body.staff-landscape-mode .staff-placement-prompt > strong {
+    font-size: 15px;
+  }
+
+  body.staff-landscape-mode .staff-placement-prompt > span {
+    padding: 3px 7px;
+    font-size: 11px;
+  }
+
+  body.staff-landscape-mode .staff-tool-actions {
+    gap: 6px;
+    padding: 7px 6px;
+  }
+
+  body.staff-landscape-mode .drill-hint {
+    padding: 7px 6px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  body.staff-landscape-mode .staff-placement-stage {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    height: 100%;
+    padding: 6px 12px;
+    overflow: visible;
+  }
+
+  body.staff-landscape-mode .staff-placement-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    transform-origin: center;
   }
 }
 
@@ -1577,7 +1648,7 @@ body.staff-landscape-mode .bottom-nav {
 
 .staff-placement-svg {
   cursor: crosshair;
-  height: clamp(210px, 56vw, 286px);
+  height: clamp(188px, 50vw, 250px);
   min-width: 0;
   touch-action: manipulation;
 }
@@ -1608,7 +1679,7 @@ body.staff-landscape-mode .bottom-nav {
 
 .staff-mark-label text {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 800;
 }
 

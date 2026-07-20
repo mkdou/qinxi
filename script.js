@@ -505,10 +505,22 @@ function staffLedgerLinesForMark(x, step, bottomLineY, stepGap) {
 function staffMarkFromSvgEvent(event) {
   const svg = event.target.closest("svg");
   if (!svg) return null;
-  const rect = svg.getBoundingClientRect();
   const viewBox = svg.viewBox.baseVal;
-  const x = ((event.clientX - rect.left) / rect.width) * viewBox.width;
-  const y = ((event.clientY - rect.top) / rect.height) * viewBox.height;
+  let x;
+  let y;
+  const matrix = svg.getScreenCTM?.();
+  if (matrix) {
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const local = point.matrixTransform(matrix.inverse());
+    x = local.x;
+    y = local.y;
+  } else {
+    const rect = svg.getBoundingClientRect();
+    x = ((event.clientX - rect.left) / rect.width) * viewBox.width;
+    y = ((event.clientY - rect.top) / rect.height) * viewBox.height;
+  }
   const bottomLineY = Number(svg.dataset.bottomLineY);
   const stepGap = Number(svg.dataset.stepGap);
   const minStep = Number(svg.dataset.minStep);
@@ -516,7 +528,7 @@ function staffMarkFromSvgEvent(event) {
   const step = Math.max(minStep, Math.min(maxStep, Math.round((bottomLineY - y) / stepGap)));
   return {
     step,
-    x: Math.max(128, Math.min(viewBox.width - 52, x))
+    x: Math.max(96, Math.min(viewBox.width - 42, x))
   };
 }
 
@@ -2501,8 +2513,8 @@ function renderStaffDrill(type = "staff") {
         : question.requiredCount === 2
           ? "依次点击两个位置，落点会自动吸附到最近的线或间。"
           : "点击五线谱上的线或间，落点会自动吸附到最近位置。";
-  const bottomLineY = 190;
-  const stepGap = 17;
+  const bottomLineY = 188;
+  const stepGap = 14;
   const lineStart = 16;
   const lineEnd = 684;
   const minStep = -4;
@@ -2521,15 +2533,15 @@ function renderStaffDrill(type = "staff") {
         .map((position, index, positions) => {
           const x = positions.length === 1 ? 510 : 468 + index * 84;
           const y = staffMarkY(position.step, bottomLineY, stepGap);
-          const labelY = y <= 54 ? y + 40 : y >= 250 ? y - 32 : y - 32;
-          const labelX = Math.max(84, Math.min(616, x));
+          const labelY = y <= 46 ? y + 42 : y >= 228 ? y - 36 : y - 36;
+          const labelX = Math.max(110, Math.min(590, x));
           return `
             <g class="staff-correct-reference">
               ${staffLedgerLinesForMark(x, position.step, bottomLineY, stepGap)}
-              <ellipse class="staff-note-dot" cx="${x}" cy="${y}" rx="19" ry="13" fill="#2e9b5f" transform="rotate(-18 ${x} ${y})" />
+              <ellipse class="staff-note-dot" cx="${x}" cy="${y}" rx="22" ry="15" fill="#2e9b5f" transform="rotate(-18 ${x} ${y})" />
               <g class="staff-mark-label correct">
-                <rect x="${labelX - 76}" y="${labelY - 15}" width="152" height="24" rx="5" />
-                <text x="${labelX}" y="${labelY + 1}" text-anchor="middle">正确 ${staffPitchText(position)}</text>
+                <rect x="${labelX - 98}" y="${labelY - 20}" width="196" height="32" rx="7" />
+                <text x="${labelX}" y="${labelY + 2}" text-anchor="middle">正确 ${staffPitchText(position)}</text>
               </g>
             </g>
           `;
@@ -2543,18 +2555,18 @@ function renderStaffDrill(type = "staff") {
       const isGraded = state.status === "correct" || state.status === "wrong";
       const isMarkCorrect = staffMarkIsCorrect(mark, question);
       const fill = isGraded ? (isMarkCorrect ? "#2e9b5f" : "#d93636") : "#2f6a55";
-      const labelY = y <= 54 ? y + 40 : y >= 250 ? y - 32 : y - 32;
-      const labelX = Math.max(84, Math.min(616, mark.x));
+      const labelY = y <= 46 ? y + 42 : y >= 228 ? y - 36 : y - 36;
+      const labelX = Math.max(110, Math.min(590, mark.x));
       const label = `${isMarkCorrect ? "正确" : "标成"} ${staffPitchText(position)}`;
       return `
         <g class="staff-user-mark">
           ${staffLedgerLinesForMark(mark.x, mark.step, bottomLineY, stepGap)}
-          <ellipse class="staff-note-dot" cx="${mark.x}" cy="${y}" rx="19" ry="13" fill="${fill}" transform="rotate(-18 ${mark.x} ${y})" />
+          <ellipse class="staff-note-dot" cx="${mark.x}" cy="${y}" rx="22" ry="15" fill="${fill}" transform="rotate(-18 ${mark.x} ${y})" />
           ${
             isGraded
               ? `<g class="staff-mark-label ${isMarkCorrect ? "correct" : "wrong"}">
-                  <rect x="${labelX - 76}" y="${labelY - 15}" width="152" height="24" rx="5" />
-                  <text x="${labelX}" y="${labelY + 1}" text-anchor="middle">${label}</text>
+                  <rect x="${labelX - 98}" y="${labelY - 20}" width="196" height="32" rx="7" />
+                  <text x="${labelX}" y="${labelY + 2}" text-anchor="middle">${label}</text>
                 </g>`
               : ""
           }
@@ -2585,7 +2597,7 @@ function renderStaffDrill(type = "staff") {
       <div class="drill-stage staff-placement-stage ${state.status}">
         <svg
           class="drill-staff staff-placement-svg ${state.status !== "idle" ? "graded" : ""}"
-          viewBox="0 0 700 310"
+          viewBox="0 0 700 270"
           role="img"
           aria-label="${clefLabel}标注音符练习"
           data-staff-placement="${type}"
