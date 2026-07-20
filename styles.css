@@ -486,91 +486,19 @@ body.staff-landscape-mode .bottom-nav {
   }
 
   body.staff-landscape-mode .staff-drill-card {
-    display: grid;
     grid-template-rows: auto auto auto auto 1fr auto;
-    grid-template-columns: 118px 1fr;
-    top: 0;
-    right: auto;
-    bottom: auto;
-    left: 100vw;
-    width: 100vh;
-    height: 100vw;
-    transform: rotate(90deg);
-    transform-origin: top left;
+    grid-template-columns: 1fr;
   }
 
   body.staff-landscape-mode .drill-stats,
   body.staff-landscape-mode .clef-switch,
   body.staff-landscape-mode .staff-placement-prompt,
   body.staff-landscape-mode .staff-tool-actions,
+  body.staff-landscape-mode .staff-placement-stage,
   body.staff-landscape-mode .drill-hint,
   body.staff-landscape-mode .staff-next-row {
     grid-column: 1;
     grid-row: auto;
-    min-width: 0;
-  }
-
-  body.staff-landscape-mode .drill-stats {
-    align-content: center;
-    gap: 8px;
-    padding: 8px 6px;
-  }
-
-  body.staff-landscape-mode .drill-stats strong {
-    font-size: 18px;
-  }
-
-  body.staff-landscape-mode .clef-switch {
-    gap: 6px;
-    padding: 8px 6px;
-  }
-
-  body.staff-landscape-mode .clef-switch button,
-  body.staff-landscape-mode .staff-tool-actions .ghost-action,
-  body.staff-landscape-mode .staff-next-row .primary-action {
-    min-height: 34px;
-    padding: 6px 8px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  body.staff-landscape-mode .staff-placement-prompt {
-    align-content: center;
-    gap: 6px;
-    padding: 8px 6px;
-  }
-
-  body.staff-landscape-mode .staff-placement-prompt > strong {
-    font-size: 16px;
-  }
-
-  body.staff-landscape-mode .staff-placement-prompt > span {
-    padding: 3px 7px;
-    font-size: 11px;
-  }
-
-  body.staff-landscape-mode .staff-tool-actions {
-    gap: 6px;
-    padding: 8px 6px;
-  }
-
-  body.staff-landscape-mode .drill-hint {
-    padding: 8px 6px;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  body.staff-landscape-mode .staff-placement-stage {
-    grid-column: 2;
-    grid-row: 1 / -1;
-    height: 100%;
-    padding: 10px 14px;
-  }
-
-  body.staff-landscape-mode .staff-placement-svg {
-    width: 100%;
-    min-width: 0;
-    height: 100%;
   }
 }
 
@@ -1628,7 +1556,7 @@ body.staff-landscape-mode .bottom-nav {
 
 .staff-placement-stage {
   overflow: hidden;
-  padding-top: 12px;
+  padding: 8px 4px 16px;
 }
 
 .drill-stage.wrong .drill-dot {
@@ -1649,6 +1577,7 @@ body.staff-landscape-mode .bottom-nav {
 
 .staff-placement-svg {
   cursor: crosshair;
+  height: clamp(210px, 56vw, 286px);
   min-width: 0;
   touch-action: manipulation;
 }

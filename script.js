@@ -2501,10 +2501,10 @@ function renderStaffDrill(type = "staff") {
         : question.requiredCount === 2
           ? "依次点击两个位置，落点会自动吸附到最近的线或间。"
           : "点击五线谱上的线或间，落点会自动吸附到最近位置。";
-  const bottomLineY = 172;
-  const stepGap = 14;
-  const lineStart = 64;
-  const lineEnd = 636;
+  const bottomLineY = 190;
+  const stepGap = 17;
+  const lineStart = 16;
+  const lineEnd = 684;
   const minStep = -4;
   const maxStep = 12;
   const lines = [0, 2, 4, 6, 8]
@@ -2521,8 +2521,8 @@ function renderStaffDrill(type = "staff") {
         .map((position, index, positions) => {
           const x = positions.length === 1 ? 510 : 468 + index * 84;
           const y = staffMarkY(position.step, bottomLineY, stepGap);
-          const labelY = y <= 42 ? y + 36 : y >= 206 ? y - 30 : y - 30;
-          const labelX = Math.max(92, Math.min(608, x));
+          const labelY = y <= 54 ? y + 40 : y >= 250 ? y - 32 : y - 32;
+          const labelX = Math.max(84, Math.min(616, x));
           return `
             <g class="staff-correct-reference">
               ${staffLedgerLinesForMark(x, position.step, bottomLineY, stepGap)}
@@ -2543,8 +2543,8 @@ function renderStaffDrill(type = "staff") {
       const isGraded = state.status === "correct" || state.status === "wrong";
       const isMarkCorrect = staffMarkIsCorrect(mark, question);
       const fill = isGraded ? (isMarkCorrect ? "#2e9b5f" : "#d93636") : "#2f6a55";
-      const labelY = y <= 42 ? y + 36 : y >= 206 ? y - 30 : y - 30;
-      const labelX = Math.max(92, Math.min(608, mark.x));
+      const labelY = y <= 54 ? y + 40 : y >= 250 ? y - 32 : y - 32;
+      const labelX = Math.max(84, Math.min(616, mark.x));
       const label = `${isMarkCorrect ? "正确" : "标成"} ${staffPitchText(position)}`;
       return `
         <g class="staff-user-mark">
@@ -2585,7 +2585,7 @@ function renderStaffDrill(type = "staff") {
       <div class="drill-stage staff-placement-stage ${state.status}">
         <svg
           class="drill-staff staff-placement-svg ${state.status !== "idle" ? "graded" : ""}"
-          viewBox="0 0 700 266"
+          viewBox="0 0 700 310"
           role="img"
           aria-label="${clefLabel}标注音符练习"
           data-staff-placement="${type}"
@@ -2595,7 +2595,7 @@ function renderStaffDrill(type = "staff") {
           data-max-step="${maxStep}"
         >
           ${lines}
-          ${staffClefMarkup(state.clef, 104, state.clef === "treble" ? 142 : 88, 28)}
+          ${staffClefMarkup(state.clef, 76, state.clef === "treble" ? 162 : 106, 32)}
           ${marks}${correctionMarks}
         </svg>
       </div>
