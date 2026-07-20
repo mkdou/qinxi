@@ -401,7 +401,7 @@ function createStaffPlacementQuestion(type, clef) {
       mode: "multiple",
       targetName: positions[0].name,
       positions,
-      prompt: `请在下面标注出两个 ${positions[0].name} 的位置`,
+      prompt: `请在下面标注出 ${staffTargetNameList(positions)} 的位置`,
       requiredCount: 2
     };
   }
@@ -461,8 +461,18 @@ function staffPitchText(position) {
   return `${position.name}${position.octave} · ${numberedPitchText(position)}`;
 }
 
+function staffTargetNameList(positions) {
+  return positions.map(position => `${position.name}${position.octave}`).join("、");
+}
+
 function staffTargetSummary(question) {
   return question.positions.map(staffPitchText).join("、");
+}
+
+function staffTargetChipMarkup(question) {
+  return question.positions
+    .map(position => `<span>${position.name}${position.octave} = ${numberedPitchMarkup(position)}</span>`)
+    .join("");
 }
 
 function staffMarkIsCorrect(mark, question) {
@@ -2507,7 +2517,7 @@ function renderStaffDrill(type = "staff") {
       </div>
       <div class="staff-placement-prompt">
         <strong>${question.prompt}</strong>
-        ${question.requiredCount === 1 ? `<span class="staff-target-chip">${question.positions[0].name}${question.positions[0].octave} = ${numberedPitchMarkup(question.positions[0])}</span>` : ""}
+        <span class="staff-target-chip">${staffTargetChipMarkup(question)}</span>
         <span>${question.requiredCount === 2 ? `${state.marks.length}/2 已标注` : "点击谱面作答"}</span>
       </div>
       <div class="drill-stage staff-placement-stage ${state.status}">
