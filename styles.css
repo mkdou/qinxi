@@ -403,6 +403,45 @@ body.ear-landscape-mode .ear-scroll-hint {
   padding: 6px 14px;
 }
 
+body.staff-landscape-mode {
+  overflow: hidden;
+}
+
+body.staff-landscape-mode .staff-drill-card {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #f6f6f4;
+}
+
+body.staff-landscape-mode .staff-placement-prompt {
+  padding-top: 12px;
+}
+
+body.staff-landscape-mode .staff-placement-stage {
+  display: grid;
+  align-items: center;
+  padding: 8px 18px;
+  overflow: auto;
+}
+
+body.staff-landscape-mode .staff-placement-svg {
+  width: 100%;
+  min-width: 760px;
+}
+
+body.staff-landscape-mode .bottom-nav {
+  display: none;
+}
+
 @media (orientation: portrait) {
   body.ear-landscape-mode .ear-piano-tool {
     top: 0;
@@ -413,6 +452,21 @@ body.ear-landscape-mode .ear-scroll-hint {
     height: 100vw;
     transform: rotate(90deg);
     transform-origin: top left;
+  }
+
+  body.staff-landscape-mode .staff-drill-card {
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: 100vw;
+    width: 100vh;
+    height: 100vw;
+    transform: rotate(90deg);
+    transform-origin: top left;
+  }
+
+  body.staff-landscape-mode .staff-placement-svg {
+    min-width: 720px;
   }
 }
 
@@ -1455,8 +1509,23 @@ body.ear-landscape-mode .ear-scroll-hint {
   font-weight: 900;
 }
 
+.staff-tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 18px 0;
+}
+
+.staff-tool-actions .ghost-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .staff-placement-stage {
+  overflow-x: auto;
   padding-top: 12px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .drill-stage.wrong .drill-dot {
@@ -1477,6 +1546,7 @@ body.ear-landscape-mode .ear-scroll-hint {
 
 .staff-placement-svg {
   cursor: crosshair;
+  min-width: 680px;
   touch-action: manipulation;
 }
 
@@ -1492,6 +1562,10 @@ body.ear-landscape-mode .ear-scroll-hint {
 }
 
 .staff-user-mark {
+  pointer-events: none;
+}
+
+.staff-correct-reference {
   pointer-events: none;
 }
 

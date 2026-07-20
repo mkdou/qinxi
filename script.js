@@ -2045,6 +2045,39 @@ async function toggleEarLandscape() {
   }
 }
 
+function updateStaffLandscapeButtons() {
+  document.querySelectorAll("[data-staff-landscape]").forEach(button => {
+    const active = document.body.classList.contains("staff-landscape-mode");
+    button.textContent = active ? "退出横屏" : "横屏练习";
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+async function toggleStaffLandscape(type) {
+  const tool = document.querySelector(`[data-staff-tool="${type}"]`);
+  if (!tool) return;
+  const active = document.body.classList.contains("staff-landscape-mode");
+
+  if (active) {
+    document.body.classList.remove("staff-landscape-mode");
+    try {
+      screen.orientation?.unlock?.();
+      if (document.fullscreenElement) await document.exitFullscreen?.();
+    } catch {}
+    updateStaffLandscapeButtons();
+    return;
+  }
+
+  document.body.classList.add("staff-landscape-mode");
+  updateStaffLandscapeButtons();
+  try {
+    if (tool.requestFullscreen && !document.fullscreenElement) await tool.requestFullscreen();
+    await screen.orientation?.lock?.("landscape");
+  } catch {
+    // iPhone 添加到桌面时通常不开放横屏锁定 API，CSS 横向全屏模式仍会生效。
+  }
+}
+
 function renderEarPianoExplorer() {
   if (!els.earPianoExplorer) return;
   const previousScroller = els.earPianoExplorer.querySelector(".ear-keyboard-scroll");
@@ -2468,16 +2501,41 @@ function renderStaffDrill(type = "staff") {
         : question.requiredCount === 2
           ? "依次点击两个位置，落点会自动吸附到最近的线或间。"
           : "点击五线谱上的线或间，落点会自动吸附到最近位置。";
-  const bottomLineY = 154;
-  const stepGap = 12;
+  const bottomLineY = 172;
+  const stepGap = 14;
+  const lineStart = 64;
+  const lineEnd = 636;
   const minStep = -4;
   const maxStep = 12;
   const lines = [0, 2, 4, 6, 8]
     .map(step => {
       const y = staffMarkY(step, bottomLineY, stepGap);
-      return `<line x1="52" y1="${y}" x2="410" y2="${y}" stroke="#333" stroke-width="1.7" />`;
+      return `<line x1="${lineStart}" y1="${y}" x2="${lineEnd}" y2="${y}" stroke="#333" stroke-width="1.7" />`;
     })
     .join("");
+  const gradedWrong = state.status === "wrong";
+  const answeredSteps = new Set((state.marks || []).map(mark => mark.step));
+  const correctionMarks = gradedWrong
+    ? question.positions
+        .filter(position => !answeredSteps.has(position.step))
+        .map((position, index, positions) => {
+          const x = positions.length === 1 ? 510 : 468 + index * 84;
+          const y = staffMarkY(position.step, bottomLineY, stepGap);
+          const labelY = y <= 42 ? y + 36 : y >= 206 ? y - 30 : y - 30;
+          const labelX = Math.max(92, Math.min(608, x));
+          return `
+            <g class="staff-correct-reference">
+              ${staffLedgerLinesForMark(x, position.step, bottomLineY, stepGap)}
+              <ellipse class="staff-note-dot" cx="${x}" cy="${y}" rx="19" ry="13" fill="#2e9b5f" transform="rotate(-18 ${x} ${y})" />
+              <g class="staff-mark-label correct">
+                <rect x="${labelX - 76}" y="${labelY - 15}" width="152" height="24" rx="5" />
+                <text x="${labelX}" y="${labelY + 1}" text-anchor="middle">正确 ${staffPitchText(position)}</text>
+              </g>
+            </g>
+          `;
+        })
+        .join("")
+    : "";
   const marks = (state.marks || [])
     .map(mark => {
       const y = staffMarkY(mark.step, bottomLineY, stepGap);
@@ -2485,17 +2543,17 @@ function renderStaffDrill(type = "staff") {
       const isGraded = state.status === "correct" || state.status === "wrong";
       const isMarkCorrect = staffMarkIsCorrect(mark, question);
       const fill = isGraded ? (isMarkCorrect ? "#2e9b5f" : "#d93636") : "#2f6a55";
-      const labelY = y <= 38 ? y + 34 : y >= 188 ? y - 27 : y - 26;
-      const labelX = Math.max(78, Math.min(372, mark.x));
+      const labelY = y <= 42 ? y + 36 : y >= 206 ? y - 30 : y - 30;
+      const labelX = Math.max(92, Math.min(608, mark.x));
       const label = `${isMarkCorrect ? "正确" : "标成"} ${staffPitchText(position)}`;
       return `
         <g class="staff-user-mark">
           ${staffLedgerLinesForMark(mark.x, mark.step, bottomLineY, stepGap)}
-          <ellipse class="staff-note-dot" cx="${mark.x}" cy="${y}" rx="18" ry="12" fill="${fill}" transform="rotate(-18 ${mark.x} ${y})" />
+          <ellipse class="staff-note-dot" cx="${mark.x}" cy="${y}" rx="19" ry="13" fill="${fill}" transform="rotate(-18 ${mark.x} ${y})" />
           ${
             isGraded
               ? `<g class="staff-mark-label ${isMarkCorrect ? "correct" : "wrong"}">
-                  <rect x="${labelX - 72}" y="${labelY - 15}" width="144" height="24" rx="5" />
+                  <rect x="${labelX - 76}" y="${labelY - 15}" width="152" height="24" rx="5" />
                   <text x="${labelX}" y="${labelY + 1}" text-anchor="middle">${label}</text>
                 </g>`
               : ""
@@ -2506,7 +2564,7 @@ function renderStaffDrill(type = "staff") {
     .join("");
 
   return `
-    <section class="drill-card">
+    <section class="drill-card staff-drill-card" data-staff-tool="${type}">
       <div class="drill-stats">
         <strong>${stats.correct}/${stats.attempts}</strong>
         <strong>${getAccuracy(stats)}</strong>
@@ -2520,10 +2578,14 @@ function renderStaffDrill(type = "staff") {
         <span class="staff-target-chip">${staffTargetChipMarkup(question)}</span>
         <span>${question.requiredCount === 2 ? `${state.marks.length}/2 已标注` : "点击谱面作答"}</span>
       </div>
+      <div class="staff-tool-actions">
+        <button class="ghost-action" type="button" data-undo-staff="${type}" ${state.status !== "idle" || state.marks.length === 0 ? "disabled" : ""}>撤销上一个</button>
+        <button class="ghost-action" type="button" data-staff-landscape="${type}" aria-pressed="${document.body.classList.contains("staff-landscape-mode")}">${document.body.classList.contains("staff-landscape-mode") ? "退出横屏" : "横屏练习"}</button>
+      </div>
       <div class="drill-stage staff-placement-stage ${state.status}">
         <svg
           class="drill-staff staff-placement-svg ${state.status !== "idle" ? "graded" : ""}"
-          viewBox="0 0 450 236"
+          viewBox="0 0 700 266"
           role="img"
           aria-label="${clefLabel}标注音符练习"
           data-staff-placement="${type}"
@@ -2533,8 +2595,8 @@ function renderStaffDrill(type = "staff") {
           data-max-step="${maxStep}"
         >
           ${lines}
-          ${staffClefMarkup(state.clef, 62, state.clef === "treble" ? 130 : 82, 24)}
-          ${marks}
+          ${staffClefMarkup(state.clef, 104, state.clef === "treble" ? 142 : 88, 28)}
+          ${marks}${correctionMarks}
         </svg>
       </div>
       <p class="drill-hint">${feedback}</p>
@@ -2934,6 +2996,13 @@ function answerStaffPlacement(type, mark) {
   }
 
   state.status = "wrong";
+  renderTheoryLevels();
+}
+
+function undoStaffPlacement(type) {
+  const state = drillState[type];
+  if (!state || state.status !== "idle" || !state.marks.length) return;
+  state.marks = state.marks.slice(0, -1);
   renderTheoryLevels();
 }
 
@@ -3479,9 +3548,15 @@ function setupEvents() {
   });
 
   document.addEventListener("fullscreenchange", () => {
-    if (document.fullscreenElement || !document.body.classList.contains("ear-landscape-mode")) return;
-    document.body.classList.remove("ear-landscape-mode");
-    updateEarLandscapeButton();
+    if (document.fullscreenElement) return;
+    if (document.body.classList.contains("ear-landscape-mode")) {
+      document.body.classList.remove("ear-landscape-mode");
+      updateEarLandscapeButton();
+    }
+    if (document.body.classList.contains("staff-landscape-mode")) {
+      document.body.classList.remove("staff-landscape-mode");
+      updateStaffLandscapeButtons();
+    }
   });
 
   els.scoreModes.forEach(button => {
@@ -3608,6 +3683,18 @@ function setupEvents() {
     const nextStaffButton = event.target.closest("[data-next-staff]");
     if (nextStaffButton) {
       nextStaffPlacement(nextStaffButton.dataset.nextStaff);
+      return;
+    }
+
+    const undoStaffButton = event.target.closest("[data-undo-staff]");
+    if (undoStaffButton) {
+      undoStaffPlacement(undoStaffButton.dataset.undoStaff);
+      return;
+    }
+
+    const staffLandscapeButton = event.target.closest("[data-staff-landscape]");
+    if (staffLandscapeButton) {
+      toggleStaffLandscape(staffLandscapeButton.dataset.staffLandscape);
       return;
     }
 
