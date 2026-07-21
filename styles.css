@@ -412,7 +412,7 @@ body.staff-landscape-mode .staff-drill-card {
   inset: 0;
   z-index: 100;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto auto 1fr auto;
   grid-template-columns: auto minmax(0, 1fr) auto;
   width: 100vw;
   height: 100vh;
@@ -450,16 +450,21 @@ body.staff-landscape-mode .staff-tool-actions {
 
 body.staff-landscape-mode .staff-placement-stage {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   display: grid;
-  align-items: center;
-  padding: 8px 18px;
+  align-items: start;
+  padding: 4px 4px 10px;
   overflow: hidden;
 }
 
 body.staff-landscape-mode .drill-hint,
 body.staff-landscape-mode .staff-next-row {
   grid-column: 1 / -1;
+}
+
+body.staff-landscape-mode .drill-hint {
+  grid-row: 5;
+  padding: 6px 10px;
 }
 
 body.staff-landscape-mode .staff-placement-svg {
@@ -486,26 +491,44 @@ body.staff-landscape-mode .bottom-nav {
   }
 
   body.staff-landscape-mode .staff-drill-card {
-    top: 0;
-    right: auto;
-    bottom: auto;
-    left: 100vw;
     grid-template-rows: auto auto auto auto 1fr auto;
-    grid-template-columns: 132px 1fr;
-    width: 100vh;
-    height: 100vw;
-    transform: rotate(90deg);
-    transform-origin: top left;
+    grid-template-columns: 1fr;
   }
 
-  body.staff-landscape-mode .drill-stats,
-  body.staff-landscape-mode .clef-switch,
-  body.staff-landscape-mode .staff-placement-prompt,
-  body.staff-landscape-mode .staff-tool-actions,
+  body.staff-landscape-mode .drill-stats {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  body.staff-landscape-mode .clef-switch {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  body.staff-landscape-mode .staff-placement-prompt {
+    grid-column: 1;
+    grid-row: 3;
+    min-width: 0;
+  }
+
+  body.staff-landscape-mode .staff-tool-actions {
+    grid-column: 1;
+    grid-row: 4;
+    min-width: 0;
+  }
+
+  body.staff-landscape-mode .staff-placement-stage {
+    grid-column: 1;
+    grid-row: 5;
+    min-width: 0;
+  }
+
   body.staff-landscape-mode .drill-hint,
   body.staff-landscape-mode .staff-next-row {
     grid-column: 1;
-    grid-row: auto;
+    grid-row: 6;
     min-width: 0;
   }
 
@@ -558,18 +581,14 @@ body.staff-landscape-mode .bottom-nav {
   }
 
   body.staff-landscape-mode .staff-placement-stage {
-    grid-column: 2;
-    grid-row: 1 / -1;
     height: 100%;
-    padding: 6px 12px;
-    overflow: visible;
+    padding: 6px 4px 12px;
+    overflow: hidden;
   }
 
   body.staff-landscape-mode .staff-placement-svg {
     width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-    transform-origin: center;
+    height: clamp(220px, 58vw, 286px);
   }
 }
 
@@ -1679,7 +1698,7 @@ body.staff-landscape-mode .bottom-nav {
 
 .staff-mark-label text {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 800;
 }
 

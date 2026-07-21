@@ -2597,7 +2597,7 @@ function renderStaffDrill(type = "staff") {
       <div class="drill-stage staff-placement-stage ${state.status}">
         <svg
           class="drill-staff staff-placement-svg ${state.status !== "idle" ? "graded" : ""}"
-          viewBox="0 0 700 270"
+          viewBox="0 36 700 210"
           role="img"
           aria-label="${clefLabel}标注音符练习"
           data-staff-placement="${type}"
