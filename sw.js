@@ -1,4 +1,4 @@
-const cacheName = "qinxi-v40";
+const cacheName = "qinxi-v41";
 const files = [
   "./",
   "./index.html",
@@ -74,22 +74,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  event.respondWith(
-    fetch(request).catch(() =>
-      new Response(
-        JSON.stringify({
-          error: "network_unavailable",
-          message: "Network request failed."
-        }),
-        {
-          status: 503,
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
-      )
-    )
-  );
+  // Let Supabase, CDN, and other external requests use the browser's native network path.
 });
 
 self.addEventListener("message", event => {
