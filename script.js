@@ -1087,6 +1087,23 @@ function withTimeout(promise, milliseconds, message) {
   return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
 }
 
+function formatSyncError(error, fallback) {
+  const rawMessage = typeof error === "string" ? error : error?.message || "";
+  const message = rawMessage.trim();
+  const isNetworkError =
+    /FetchEvent|respondWith|Returned response is null|Load failed|Failed to fetch|NetworkError|Network request failed|network_unavailable/i.test(
+      message
+    );
+
+  if (isNetworkError) {
+    return "网络连接失败：请切换 Wi-Fi/5G，关闭桌面版琴习后重开，再重新发送验证码。";
+  }
+
+  if (/timeout|超时/i.test(message)) return message;
+  if (!message) return fallback;
+  return `${fallback.replace(/。$/, "")}：${message}`;
+}
+
 function updateSyncUI(message) {
   const client = getSupabaseClient();
   if (!els.syncTitle) return;
@@ -3848,7 +3865,7 @@ function setupEvents() {
     const client = getSupabaseClient();
     const email = els.syncEmail.value.trim();
     if (!client) {
-      setSyncStatus("同步组件没有加载成功，请检查网络后刷新。");
+      setSyncStatus("同步组件没有加载成功：请切换网络后关闭桌面版琴习再重开。");
       return;
     }
     if (!email) return;
@@ -3870,14 +3887,16 @@ function setupEvents() {
         "发送超时。手机网络到 Supabase 可能较慢，请切换 Wi-Fi 或稍后再试。"
       );
     } catch (error) {
-      setSyncStatus(error.message);
+      console.error(error);
+      setSyncStatus(formatSyncError(error, "发送失败，请稍后再试。"));
       els.sendLoginLink.disabled = false;
       els.sendLoginLink.textContent = "重新发送验证码";
       return;
     }
 
     if (result.error) {
-      setSyncStatus(`发送失败：${result.error.message}`);
+      console.error(result.error);
+      setSyncStatus(formatSyncError(result.error, "发送失败，请稍后再试。"));
       els.sendLoginLink.disabled = false;
       els.sendLoginLink.textContent = "重新发送验证码";
       return;
@@ -3914,14 +3933,16 @@ function setupEvents() {
         "验证超时。请检查网络后再试一次。"
       );
     } catch (error) {
-      setSyncStatus(error.message);
+      console.error(error);
+      setSyncStatus(formatSyncError(error, "验证失败，请稍后再试。"));
       els.verifyLoginCode.disabled = false;
       els.verifyLoginCode.textContent = "验证登录";
       return;
     }
 
     if (result.error) {
-      setSyncStatus(`验证失败：${result.error.message}`);
+      console.error(result.error);
+      setSyncStatus(formatSyncError(result.error, "验证失败，请稍后再试。"));
       els.verifyLoginCode.disabled = false;
       els.verifyLoginCode.textContent = "验证登录";
       return;

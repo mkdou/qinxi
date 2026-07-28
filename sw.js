@@ -1,4 +1,4 @@
-const cacheName = "qinxi-v39";
+const cacheName = "qinxi-v40";
 const files = [
   "./",
   "./index.html",
@@ -74,7 +74,22 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  event.respondWith(fetch(request).catch(() => caches.match(request)));
+  event.respondWith(
+    fetch(request).catch(() =>
+      new Response(
+        JSON.stringify({
+          error: "network_unavailable",
+          message: "Network request failed."
+        }),
+        {
+          status: 503,
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      )
+    )
+  );
 });
 
 self.addEventListener("message", event => {
