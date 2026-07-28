@@ -1087,6 +1087,24 @@ function withTimeout(promise, milliseconds, message) {
   return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timeoutId));
 }
 
+async function checkSupabaseReachable() {
+  try {
+    await withTimeout(
+      fetch(`${supabaseUrl}/auth/v1/health`, {
+        method: "GET",
+        mode: "no-cors",
+        cache: "no-store"
+      }),
+      8000,
+      "云同步后端连接超时。"
+    );
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}
+
 function formatSyncError(error, fallback) {
   const rawMessage = typeof error === "string" ? error : error?.message || "";
   const message = rawMessage.trim();
@@ -1096,7 +1114,7 @@ function formatSyncError(error, fallback) {
     );
 
   if (isNetworkError) {
-    return "网络连接失败：请切换 Wi-Fi/5G，关闭桌面版琴习后重开，再重新发送验证码。";
+    return "云同步后端地址不可达：当前 Supabase 项目域名无法连接，需要恢复 Supabase 项目或换成新的项目地址。";
   }
 
   if (/timeout|超时/i.test(message)) return message;
@@ -3870,9 +3888,18 @@ function setupEvents() {
     }
     if (!email) return;
 
-    setSyncStatus("正在发送验证码，手机网络慢时可能需要半分钟左右...");
+    setSyncStatus("正在检查云同步后端...");
     els.sendLoginLink.disabled = true;
     els.sendLoginLink.textContent = "发送中...";
+    const backendReachable = await checkSupabaseReachable();
+    if (!backendReachable) {
+      setSyncStatus("云同步后端地址不可达：当前 Supabase 项目域名无法连接，需要恢复 Supabase 项目或换成新的项目地址。");
+      els.sendLoginLink.disabled = false;
+      els.sendLoginLink.textContent = "重新发送验证码";
+      return;
+    }
+
+    setSyncStatus("正在发送验证码，手机网络慢时可能需要半分钟左右...");
     let result;
     try {
       result = await withTimeout(
