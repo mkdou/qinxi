@@ -850,6 +850,7 @@ const els = {
   totalCheckinDays: document.querySelector("#totalCheckinDays"),
   weekMinutes: document.querySelector("#weekMinutes"),
   totalMinutes: document.querySelector("#totalMinutes"),
+  profileTotalMinutes: document.querySelector("#profileTotalMinutes"),
   todayStatus: document.querySelector("#todayStatus"),
   todaySummary: document.querySelector("#todaySummary"),
   recordDays: document.querySelector("#recordDays"),
@@ -3537,26 +3538,30 @@ function renderStats() {
   const practiceDates = getPracticeDates(records);
   const todayRecord = records.find(record => record.date === todayISO());
 
-  els.streakDays.textContent = `${calculateStreak(records)} 天`;
-  els.totalCheckinDays.textContent = `${practiceDates.length} 天`;
-  els.weekMinutes.textContent = `${weekTotal(records)} 分钟`;
-  els.totalMinutes.textContent = `${total} 分钟`;
-  els.recordDays.textContent = practiceDates.length;
-  els.avgMinutes.textContent = practiceDates.length ? `${Math.round(total / practiceDates.length)} 分钟` : "0 分钟";
-  els.lastPractice.textContent = records[0] ? formatDate(records[0].date) : "暂无";
+  if (els.streakDays) els.streakDays.textContent = `${calculateStreak(records)} 天`;
+  if (els.totalCheckinDays) els.totalCheckinDays.textContent = `${practiceDates.length} 天`;
+  if (els.weekMinutes) els.weekMinutes.textContent = `${weekTotal(records)} 分钟`;
+  if (els.totalMinutes) els.totalMinutes.textContent = `${total} 分钟`;
+  if (els.profileTotalMinutes) els.profileTotalMinutes.textContent = `${total} 分钟`;
+  if (els.recordDays) els.recordDays.textContent = practiceDates.length;
+  if (els.avgMinutes) els.avgMinutes.textContent = practiceDates.length ? `${Math.round(total / practiceDates.length)} 分钟` : "0 分钟";
+  if (els.lastPractice) els.lastPractice.textContent = records[0] ? formatDate(records[0].date) : "暂无";
 
   if (todayRecord) {
-    els.todayStatus.textContent = `已打卡 ${todayRecord.minutes} 分钟`;
-    els.todaySummary.textContent = `${todayRecord.kind || "学习"}：${todayRecord.topic}，感觉${todayRecord.mood}。${todayRecord.note || "保持这个节奏。"} `;
+    if (els.todayStatus) els.todayStatus.textContent = `已打卡 ${todayRecord.minutes} 分钟`;
+    if (els.todaySummary) {
+      els.todaySummary.textContent = `${todayRecord.kind || "学习"}：${todayRecord.topic}，感觉${todayRecord.mood}。${todayRecord.note || "保持这个节奏。"} `;
+    }
   } else {
-    els.todayStatus.textContent = "还没有打卡";
-    els.todaySummary.textContent = "练完以后记录一下内容和感受，明天会更容易接上。";
+    if (els.todayStatus) els.todayStatus.textContent = "还没有打卡";
+    if (els.todaySummary) els.todaySummary.textContent = "练完以后记录一下内容和感受，明天会更容易接上。";
   }
 
   renderRecords(records);
 }
 
 function renderRecords(records) {
+  if (!els.recordsList) return;
   if (!records.length) {
     els.recordsList.innerHTML = `<div class="empty-state">还没有练习记录。完成第一次打卡后，这里会显示你的学习轨迹。</div>`;
     return;
@@ -3614,8 +3619,11 @@ function setupEvents() {
     });
   });
 
-  document.querySelectorAll("[data-go]").forEach(button => {
-    button.addEventListener("click", () => switchTab(button.dataset.go));
+  document.querySelectorAll("[data-go]").forEach(item => {
+    item.addEventListener("click", event => {
+      event.preventDefault();
+      switchTab(item.dataset.go);
+    });
   });
 
   els.earPianoExplorer?.addEventListener("click", event => {

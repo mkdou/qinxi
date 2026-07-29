@@ -24,81 +24,91 @@
           </div>
         </div>
         <nav class="desktop-nav">
-          <button class="nav-item active" data-tab="home">首页</button>
-          <button class="nav-item" data-tab="theory">学习</button>
-          <button class="nav-item" data-tab="scores">乐谱</button>
-          <button class="nav-item" data-tab="import">导入</button>
-          <button class="nav-item" data-tab="checkin">打卡</button>
+          <button class="nav-item active" data-tab="home">今日练习</button>
+          <button class="nav-item" data-tab="theory">练习</button>
+          <button class="nav-item" data-tab="scores">乐理</button>
+          <button class="nav-item" data-tab="checkin">我的</button>
         </nav>
       </aside>
 
       <main class="content">
         <section class="tab-panel active" id="home">
-          <div class="page-heading">
-            <p class="eyebrow">今日练习</p>
-            <h2 id="todayTitle">今天也来摸摸琴键</h2>
-            <p>用小块时间建立稳定习惯。先练对，再慢慢练快。</p>
-          </div>
-
-          <div class="stats-grid">
-            <article class="stat-card">
-              <span>连续打卡</span>
-              <strong id="streakDays">0 天</strong>
-            </article>
-            <article class="stat-card">
-              <span>总打卡天数</span>
-              <strong id="totalCheckinDays">0 天</strong>
-            </article>
-            <article class="stat-card">
-              <span>本周练习</span>
-              <strong id="weekMinutes">0 分钟</strong>
-            </article>
-            <article class="stat-card">
-              <span>累计练习</span>
-              <strong id="totalMinutes">0 分钟</strong>
-            </article>
-          </div>
-
-          <section class="sync-panel" aria-label="云同步">
-            <div>
-              <p class="eyebrow">云同步</p>
-              <h3 id="syncTitle">未登录</h3>
-              <p id="syncStatus">登录后，电脑和手机会同步打卡日志、学习进度和做题记录。</p>
-            </div>
-            <form class="sync-form" id="syncForm">
-              <input type="email" id="syncEmail" placeholder="输入邮箱登录同步" autocomplete="email" required />
-              <button class="primary-action" type="submit" id="sendLoginLink">发送验证码</button>
-            </form>
-            <form class="sync-form sync-verify" id="verifyForm" hidden>
-              <input type="text" id="syncCode" inputmode="numeric" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件里的验证码" required />
-              <button class="primary-action" type="submit" id="verifyLoginCode">验证登录</button>
-            </form>
-            <div class="sync-actions">
-              <button class="ghost-action" type="button" id="syncNow" hidden>立即同步</button>
-              <button class="ghost-action" type="button" id="signOut" hidden>退出登录</button>
-            </div>
-          </section>
-
-          <div class="home-layout">
-            <article class="focus-card">
+          <div class="simple-home">
+            <header class="simple-hero">
               <div>
-                <p class="eyebrow">20 分钟计划</p>
-                <h3>今日推荐</h3>
+                <h2 id="todayTitle">早上好，豆豆妈</h2>
+                <p>连续练习 <strong id="streakDays">0 天</strong></p>
               </div>
-              <ol class="plan-list">
-                <li><span>5 分钟</span>去学习页做一个音符或键盘识别练习</li>
-                <li><span>10 分钟</span>选一条练琴动作，只慢练一个小片段</li>
-                <li><span>5 分钟</span>打开乐谱页，找一首公共版权入门曲听/看/弹</li>
-                <li><span>2 分钟</span>打卡记录今天卡住的点</li>
-              </ol>
-              <button class="primary-action" data-go="checkin">完成后去打卡</button>
-            </article>
+              <button class="sync-chip" type="button" data-go="checkin">
+                <span>云</span>
+                学习同步
+              </button>
+            </header>
 
-            <article class="today-card">
+            <section class="continue-card" aria-label="继续练习">
+              <div class="continue-icon">♪</div>
+              <div>
+                <p class="card-kicker">继续练习</p>
+                <h3>单音辨认</h3>
+                <p>小字一组（C4-B4）</p>
+                <div class="mini-progress"><span style="width: 60%"></span></div>
+              </div>
+              <button class="primary-action" type="button" data-go="theory">继续练习</button>
+            </section>
+
+            <section class="daily-task-section">
+              <div class="section-row">
+                <h3>今日任务</h3>
+                <button class="link-button" type="button" data-go="theory">查看全部</button>
+              </div>
+              <div class="task-list">
+                <article class="task-card" data-go="theory">
+                  <div class="task-icon green">♫</div>
+                  <div>
+                    <h4>听音训练</h4>
+                    <p>辨认声音是哪个音</p>
+                    <div class="mini-progress"><span style="width: 60%"></span></div>
+                  </div>
+                  <strong>6/10 题</strong>
+                </article>
+                <article class="task-card" data-go="theory">
+                  <div class="task-icon orange">▮</div>
+                  <div>
+                    <h4>找音训练</h4>
+                    <p>找到指定的音</p>
+                    <div class="mini-progress orange"><span style="width: 40%"></span></div>
+                  </div>
+                  <strong>4/10 题</strong>
+                </article>
+                <article class="task-card" data-go="scores">
+                  <div class="task-icon blue">□</div>
+                  <div>
+                    <h4>今日乐理</h4>
+                    <p>调号是什么？</p>
+                  </div>
+                  <button class="small-action" type="button">立即学习</button>
+                </article>
+              </div>
+            </section>
+
+            <section class="home-stat-card" data-go="checkin">
+              <div class="section-row">
+                <h3>学习统计</h3>
+                <span>›</span>
+              </div>
+              <div class="home-stat-grid">
+                <article><strong id="totalCheckinDays">0 天</strong><span>总打卡</span></article>
+                <article><strong id="totalMinutes">0 分钟</strong><span>累计练习</span></article>
+                <article><strong>82%</strong><span>听音正确率</span></article>
+                <article><strong>91%</strong><span>找音正确率</span></article>
+              </div>
+            </section>
+
+            <section class="today-card compact">
               <p class="eyebrow">今天状态</p>
               <h3 id="todayStatus">还没有打卡</h3>
               <p id="todaySummary">练完以后记录一下内容和感受，明天会更容易接上。</p>
-            </article>
+            </section>
           </div>
         </section>
 
@@ -228,7 +238,48 @@
         </section>
 
         <section class="tab-panel" id="checkin">
-          <div class="page-heading">
+          <div class="simple-subpage-head">
+            <button class="back-button" type="button" data-go="home">‹</button>
+            <h2>学习统计</h2>
+          </div>
+          <section class="stats-overview-card">
+            <div>
+              <p>连续练习</p>
+              <strong id="recordDays">0</strong><span> 天</span>
+            </div>
+            <div class="week-dots" aria-label="最近练习">
+              <span>四</span><span>五</span><span>六</span><span>日</span><span>一</span><span>二</span><span>今天</span>
+              <b>✓</b><b>✓</b><b>✓</b><b>✓</b><b>✓</b><b>✓</b><b>✓</b>
+            </div>
+          </section>
+          <div class="simple-stat-grid">
+            <article><span>累计练习</span><strong id="profileTotalMinutes">0 分钟</strong></article>
+            <article><span>累计题目</span><strong>186 题</strong></article>
+            <article><span>听音正确率</span><strong>82%</strong></article>
+            <article><span>找音正确率</span><strong>91%</strong></article>
+          </div>
+
+          <section class="sync-panel simple-sync-panel" aria-label="学习同步">
+            <div>
+              <p class="eyebrow">学习同步</p>
+              <h3 id="syncTitle">未登录</h3>
+              <p id="syncStatus">登录后，手机、平板和电脑会同步学习数据。</p>
+            </div>
+            <form class="sync-form" id="syncForm">
+              <input type="email" id="syncEmail" placeholder="输入邮箱登录同步" autocomplete="email" required />
+              <button class="primary-action" type="submit" id="sendLoginLink">发送验证码</button>
+            </form>
+            <form class="sync-form sync-verify" id="verifyForm" hidden>
+              <input type="text" id="syncCode" inputmode="numeric" maxlength="8" pattern="[0-9]{6,8}" placeholder="输入邮件里的验证码" required />
+              <button class="primary-action" type="submit" id="verifyLoginCode">验证登录</button>
+            </form>
+            <div class="sync-actions">
+              <button class="ghost-action" type="button" id="syncNow" hidden>立即同步</button>
+              <button class="ghost-action" type="button" id="signOut" hidden>退出登录</button>
+            </div>
+          </section>
+
+          <div class="page-heading mini-heading">
             <p class="eyebrow">每日打卡</p>
             <h2>记录今天练了什么</h2>
             <p>不用写很长，能让明天知道从哪里继续就够了。</p>
@@ -274,7 +325,6 @@
             <p>登录云同步后，电脑和手机会共用这些练习记录。</p>
           </div>
           <div class="record-summary">
-            <article><span>打卡天数</span><strong id="recordDays">0</strong></article>
             <article><span>平均时长</span><strong id="avgMinutes">0 分钟</strong></article>
             <article><span>最近练习</span><strong id="lastPractice">暂无</strong></article>
           </div>
@@ -284,11 +334,10 @@
     </div>
 
     <nav class="mobile-nav" aria-label="底部导航">
-      <button class="mobile-item active" data-tab="home">首页</button>
-      <button class="mobile-item" data-tab="theory">学习</button>
-      <button class="mobile-item" data-tab="scores">乐谱</button>
-      <button class="mobile-item" data-tab="import">导入</button>
-      <button class="mobile-item" data-tab="checkin">打卡</button>
+      <button class="mobile-item active" data-tab="home">今日练习</button>
+      <button class="mobile-item" data-tab="theory">练习</button>
+      <button class="mobile-item" data-tab="scores">乐理</button>
+      <button class="mobile-item" data-tab="checkin">我的</button>
     </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
