@@ -136,11 +136,43 @@
               <p>先从听音开始建立音感，再逐步进入找音、看谱和乐理。</p>
             </div>
           </div>
-          <section class="ear-training-section" id="ear-training" aria-labelledby="earTrainingTitle">
+          <section class="practice-landing" id="practiceLanding" aria-label="练习入口">
+            <button class="practice-route-card green" type="button" data-practice-route="ear">
+              <span>♪</span>
+              <div>
+                <strong>听音训练</strong>
+                <small>听声音，辨认它是哪个音</small>
+              </div>
+              <em>›</em>
+            </button>
+            <button class="practice-route-card orange" type="button" data-practice-route="find">
+              <span>⌕</span>
+              <div>
+                <strong>找音训练</strong>
+                <small>在钢琴键盘或五线谱上找到指定音</small>
+              </div>
+              <em>›</em>
+            </button>
+            <button class="practice-route-card blue" type="button" data-go="scores">
+              <span>□</span>
+              <div>
+                <strong>今日乐理</strong>
+                <small>按主题查漏补缺</small>
+              </div>
+              <em>›</em>
+            </button>
+          </section>
+          <section class="ear-training-section practice-flow-section" id="ear-training" aria-labelledby="earTrainingTitle" hidden>
             <h3 class="visually-hidden" id="earTrainingTitle">听音训练</h3>
             <div id="earPianoExplorer"></div>
             <div class="ear-course-tabs" id="earCourseTabs" aria-label="听音课程"></div>
             <div class="ear-course-panel" id="earCoursePanel"></div>
+          </section>
+          <section class="ear-training-section practice-flow-section" id="find-training" aria-labelledby="findTrainingTitle" hidden>
+            <h3 class="visually-hidden" id="findTrainingTitle">找音训练</h3>
+            <div id="findPianoExplorer"></div>
+            <div class="ear-course-tabs" id="findCourseTabs" aria-label="找音课程"></div>
+            <div class="ear-course-panel" id="findCoursePanel"></div>
           </section>
           <div class="level-layout" id="learning-drills">
             <div class="level-list" id="theoryLevels"></div>

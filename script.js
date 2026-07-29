@@ -261,7 +261,7 @@ const earState = {
   staffMark: null
 };
 const recentPracticeKey = "qinxi-recent-practice-v1";
-let practiceMode = "ear";
+let practiceMode = "landing";
 const earStaffStages = [
   { id: "stage1", number: "阶段 1", title: "小字一组", range: "C4-B4", groupIds: ["octave4"], summary: "共 7 个音，推荐初学者" },
   { id: "stage2", number: "阶段 2", title: "大字组", range: "C3-B3", groupIds: ["octave3"], summary: "共 7 个音" },
@@ -838,9 +838,13 @@ const els = {
   theoryLevels: document.querySelector("#theoryLevels"),
   theoryCategories: document.querySelector("#theoryCategories"),
   theoryLevelDetail: document.querySelector("#theoryLevelDetail"),
+  practiceLanding: document.querySelector("#practiceLanding"),
   earPianoExplorer: document.querySelector("#earPianoExplorer"),
   earCourseTabs: document.querySelector("#earCourseTabs"),
   earCoursePanel: document.querySelector("#earCoursePanel"),
+  findPianoExplorer: document.querySelector("#findPianoExplorer"),
+  findCourseTabs: document.querySelector("#findCourseTabs"),
+  findCoursePanel: document.querySelector("#findCoursePanel"),
   practiceLessons: document.querySelector("#practiceLessons"),
   theoryResources: document.querySelector("#theoryResources"),
   practiceResources: document.querySelector("#practiceResources"),
@@ -2003,7 +2007,7 @@ function applyRecentPractice() {
   earState.staffStageId = recent.staffStageId || "stage1";
   earState.view = "course";
   resetEarQuestion();
-  renderEarTraining();
+  renderPracticeTraining();
 }
 
 function renderRecentPracticeEntry() {
@@ -2688,6 +2692,25 @@ function renderFindStats() {
   return `<div class="ear-practice-stats"><span>本课统计</span><strong>${getAccuracy(stats)}</strong></div>`;
 }
 
+function setPracticeMode(mode) {
+  practiceMode = mode;
+  if (els.practiceLanding) els.practiceLanding.hidden = mode !== "landing";
+  const earSection = document.querySelector("#ear-training");
+  const findSection = document.querySelector("#find-training");
+  if (earSection) earSection.hidden = mode !== "ear";
+  if (findSection) findSection.hidden = mode !== "find";
+}
+
+function renderPracticeLanding() {
+  setPracticeMode("landing");
+  if (els.earPianoExplorer) els.earPianoExplorer.innerHTML = "";
+  if (els.earCourseTabs) els.earCourseTabs.innerHTML = "";
+  if (els.earCoursePanel) els.earCoursePanel.innerHTML = "";
+  if (els.findPianoExplorer) els.findPianoExplorer.innerHTML = "";
+  if (els.findCourseTabs) els.findCourseTabs.innerHTML = "";
+  if (els.findCoursePanel) els.findCoursePanel.innerHTML = "";
+}
+
 function renderFindCourseCards() {
   const icons = { natural: "白", black: "#", staff: "谱", ledger: "线" };
   return findCourseDefinitions.map(course => `
@@ -2703,12 +2726,12 @@ function renderFindCourseCards() {
 }
 
 function renderFindEntryPage() {
-  if (!els.earPianoExplorer || !els.earCourseTabs || !els.earCoursePanel) return;
-  els.earPianoExplorer.innerHTML = "";
-  els.earCourseTabs.innerHTML = "";
-  els.earCoursePanel.innerHTML = `
+  if (!els.findPianoExplorer || !els.findCourseTabs || !els.findCoursePanel) return;
+  els.findPianoExplorer.innerHTML = "";
+  els.findCourseTabs.innerHTML = "";
+  els.findCoursePanel.innerHTML = `
     <section class="ear-intro-page find-entry">
-      <button class="back-button" type="button" data-practice-mode="ear">‹</button>
+      <button class="back-button" type="button" data-practice-mode="landing">‹</button>
       <div class="ear-intro-art find-art">⌕</div>
       <h3>找音训练</h3>
       <p>在键盘或五线谱上找到指定的音，先建立音名与位置的对应关系。</p>
@@ -2724,10 +2747,10 @@ function renderFindEntryPage() {
 }
 
 function renderFindChoosePage() {
-  if (!els.earPianoExplorer || !els.earCourseTabs || !els.earCoursePanel) return;
-  els.earPianoExplorer.innerHTML = "";
-  els.earCourseTabs.innerHTML = "";
-  els.earCoursePanel.innerHTML = `
+  if (!els.findPianoExplorer || !els.findCourseTabs || !els.findCoursePanel) return;
+  els.findPianoExplorer.innerHTML = "";
+  els.findCourseTabs.innerHTML = "";
+  els.findCoursePanel.innerHTML = `
     <section class="ear-entry-page">
       <button class="back-button" type="button" data-find-view="entry">‹</button>
       <div class="ear-entry-section-head">
@@ -2741,13 +2764,13 @@ function renderFindChoosePage() {
 }
 
 function renderFindCourseIntro() {
-  if (!els.earPianoExplorer || !els.earCourseTabs || !els.earCoursePanel) return;
+  if (!els.findPianoExplorer || !els.findCourseTabs || !els.findCoursePanel) return;
   const course = getFindCourse();
   const isKeyboard = findState.course === "natural" || findState.course === "black";
   const group = getEarGroup(findState.groupId);
-  els.earPianoExplorer.innerHTML = "";
-  els.earCourseTabs.innerHTML = "";
-  els.earCoursePanel.innerHTML = `
+  els.findPianoExplorer.innerHTML = "";
+  els.findCourseTabs.innerHTML = "";
+  els.findCoursePanel.innerHTML = `
     <section class="ear-intro-page">
       <button class="back-button" type="button" data-find-view="choose">‹</button>
       <h3>${course.title}</h3>
@@ -2789,7 +2812,7 @@ function renderFindStaffStage(question) {
 }
 
 function renderFindCoursePanel() {
-  if (!els.earCoursePanel) return;
+  if (!els.findCoursePanel || !els.findPianoExplorer || !els.findCourseTabs) return;
   const course = getFindCourse();
   const question = ensureFindQuestion();
   const isKeyboard = findState.course === "natural" || findState.course === "black";
@@ -2800,9 +2823,9 @@ function renderFindCoursePanel() {
     : findState.status === "correct"
       ? `回答正确，目标音是 ${isKeyboard ? displayPianoPitch(target) : staffPitchText(target)}。`
       : `回答错误。你选的是 ${isKeyboard ? displayPianoPitch(selectedNote) : staffPitchText(staffPositionFromStep(findState.clef, Number(findState.lastAnswer)))}，正确答案是 ${isKeyboard ? displayPianoPitch(target) : staffPitchText(target)}。`;
-  els.earPianoExplorer.innerHTML = "";
-  els.earCourseTabs.innerHTML = "";
-  els.earCoursePanel.innerHTML = `
+  els.findPianoExplorer.innerHTML = "";
+  els.findCourseTabs.innerHTML = "";
+  els.findCoursePanel.innerHTML = `
     <section class="ear-practice-shell">
       <div class="ear-practice-nav">
         <button class="back-button" type="button" data-find-view="choose">‹</button>
@@ -2870,6 +2893,11 @@ function nextFindQuestion() {
 }
 
 function renderPracticeTraining() {
+  if (practiceMode === "landing") {
+    renderPracticeLanding();
+    return;
+  }
+  setPracticeMode(practiceMode);
   if (practiceMode === "find") renderFindTraining();
   else renderEarTraining();
 }
@@ -4123,7 +4151,10 @@ function switchTab(tabId) {
 
 function setupEvents() {
   els.tabButtons.forEach(button => {
-    button.addEventListener("click", () => switchTab(button.dataset.tab));
+    button.addEventListener("click", () => {
+      if (button.dataset.tab === "theory") renderPracticeLanding();
+      switchTab(button.dataset.tab);
+    });
   });
 
   document.addEventListener("fullscreenchange", () => {
@@ -4164,10 +4195,27 @@ function setupEvents() {
         earState.view = courseUsesIntro(homeCourse) ? "intro" : "course";
         resetEarQuestion();
         rememberRecentPractice(earState.course, earState.groupId);
-        renderEarTraining();
+        renderPracticeTraining();
+      } else if (item.dataset.go === "theory") {
+        renderPracticeLanding();
       }
       switchTab(item.dataset.go);
     });
+  });
+
+  els.practiceLanding?.addEventListener("click", event => {
+    const route = event.target.closest("[data-practice-route]");
+    if (!route) return;
+    practiceMode = route.dataset.practiceRoute;
+    if (practiceMode === "ear") {
+      earState.view = "entry";
+      resetEarQuestion();
+    }
+    if (practiceMode === "find") {
+      findState.view = "entry";
+      resetFindQuestion();
+    }
+    renderPracticeTraining();
   });
 
   els.earPianoExplorer?.addEventListener("click", event => {
@@ -4341,6 +4389,59 @@ function setupEvents() {
     }
 
     if (event.target.closest("[data-ear-next]")) nextEarQuestion();
+  });
+
+  els.findCoursePanel?.addEventListener("click", event => {
+    const practiceModeButton = event.target.closest("[data-practice-mode]");
+    if (practiceModeButton) {
+      practiceMode = practiceModeButton.dataset.practiceMode;
+      renderPracticeTraining();
+      return;
+    }
+
+    const findViewButton = event.target.closest("[data-find-view]");
+    if (findViewButton) {
+      practiceMode = "find";
+      findState.view = findViewButton.dataset.findView;
+      resetFindQuestion();
+      renderFindTraining();
+      return;
+    }
+
+    const findStartButton = event.target.closest("[data-find-start-course]");
+    if (findStartButton) {
+      practiceMode = "find";
+      findState.course = findStartButton.dataset.findStartCourse;
+      findState.view = "intro";
+      resetFindQuestion();
+      renderFindTraining();
+      return;
+    }
+
+    if (event.target.closest("[data-find-begin]")) {
+      practiceMode = "find";
+      findState.view = "course";
+      resetFindQuestion();
+      renderFindTraining();
+      return;
+    }
+
+    const findStaff = event.target.closest("[data-find-staff]");
+    if (findStaff) {
+      answerFindStaff(staffMarkFromSvgEvent(event));
+      return;
+    }
+
+    const findNextButton = event.target.closest("[data-find-next]");
+    if (findNextButton) {
+      nextFindQuestion();
+      return;
+    }
+
+    const keyAnswer = event.target.closest("[data-ear-key-answer-midi]");
+    if (keyAnswer) {
+      answerFindKeyboard(Number(keyAnswer.dataset.earKeyAnswerMidi));
+    }
   });
 
   els.theoryLevels.addEventListener("click", event => {
