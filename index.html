@@ -24,10 +24,10 @@
           </div>
         </div>
         <nav class="desktop-nav">
-          <button class="nav-item active" data-tab="home">今日练习</button>
+          <button class="nav-item active" data-tab="home">今日</button>
           <button class="nav-item" data-tab="theory">练习</button>
           <button class="nav-item" data-tab="scores">乐理</button>
-          <button class="nav-item" data-tab="checkin">我的</button>
+          <button class="nav-item" data-tab="sync">我的</button>
         </nav>
       </aside>
 
@@ -39,21 +39,37 @@
                 <h2 id="todayTitle">早上好，豆豆妈</h2>
                 <p>连续练习 <strong id="streakDays">0 天</strong></p>
               </div>
-              <button class="sync-chip" type="button" data-go="checkin">
-                <span>云</span>
-                学习同步
-              </button>
+              <div class="hero-actions">
+                <button class="sync-chip" type="button" data-go="sync">
+                  <span>云</span>
+                  已同步
+                </button>
+                <button class="avatar-button" type="button" data-go="stats" aria-label="查看学习统计">
+                  <span></span>
+                </button>
+              </div>
             </header>
+
+            <div class="piano-scene" aria-hidden="true">
+              <div class="mini-grand">
+                <div class="piano-lid"></div>
+                <div class="piano-body"></div>
+                <div class="piano-keys"><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="piano-leg left"></div>
+                <div class="piano-leg right"></div>
+              </div>
+              <div class="plant-pot"></div>
+            </div>
 
             <section class="continue-card" aria-label="继续练习">
               <div class="continue-icon">♪</div>
               <div>
                 <p class="card-kicker">继续练习</p>
-                <h3>单音辨认</h3>
-                <p>小字一组（C4-B4）</p>
-                <div class="mini-progress"><span style="width: 60%"></span></div>
+                <h3 id="continuePracticeTitle">单音辨认</h3>
+                <p id="continuePracticeSubtitle">小字一组（C4-B4）</p>
+                <div class="mini-progress"><span id="continuePracticeProgress" style="width: 0%"></span></div>
               </div>
-              <button class="primary-action" type="button" data-go="theory">继续练习</button>
+              <button class="primary-action" type="button" data-go="theory" data-ear-continue>继续练习</button>
             </section>
 
             <section class="daily-task-section">
@@ -62,7 +78,7 @@
                 <button class="link-button" type="button" data-go="theory">查看全部</button>
               </div>
               <div class="task-list">
-                <article class="task-card" data-go="theory">
+                <article class="task-card" data-go="theory" data-ear-home-course="single">
                   <div class="task-icon green">♫</div>
                   <div>
                     <h4>听音训练</h4>
@@ -71,7 +87,7 @@
                   </div>
                   <strong>6/10 题</strong>
                 </article>
-                <article class="task-card" data-go="theory">
+                <article class="task-card" data-go="theory" data-find-home>
                   <div class="task-icon orange">▮</div>
                   <div>
                     <h4>找音训练</h4>
@@ -91,7 +107,7 @@
               </div>
             </section>
 
-            <section class="home-stat-card" data-go="checkin">
+            <section class="home-stat-card" data-go="stats">
               <div class="section-row">
                 <h3>学习统计</h3>
                 <span>›</span>
@@ -113,27 +129,15 @@
         </section>
 
         <section class="tab-panel" id="theory">
-          <div class="page-heading split-heading">
+          <div class="page-heading practice-page-heading">
             <div>
-              <p class="eyebrow">学习</p>
-              <h2>乐理和练琴放在一起学</h2>
-              <p>先用互动练习建立识谱和键盘位置感，再用练琴动作把知识落到手上。</p>
-            </div>
-            <div class="learning-jumps">
-              <a href="#ear-training">钢琴听音</a>
-              <a href="#learning-drills">互动训练</a>
-              <a href="#learning-reference">学习路线</a>
-              <a href="#learning-sources">靠谱来源</a>
+              <p class="eyebrow">练习</p>
+              <h2>选择你想练习的内容</h2>
+              <p>先从听音开始建立音感，再逐步进入找音、看谱和乐理。</p>
             </div>
           </div>
           <section class="ear-training-section" id="ear-training" aria-labelledby="earTrainingTitle">
-            <div class="section-heading ear-training-heading">
-              <div>
-                <p class="eyebrow">从中央 C 开始</p>
-                <h3 id="earTrainingTitle">钢琴听音</h3>
-                <p>先熟悉一个音组，再练单音、音高方向和听音定位。点击琴键可以随时听真实钢琴音色。</p>
-              </div>
-            </div>
+            <h3 class="visually-hidden" id="earTrainingTitle">听音训练</h3>
             <div id="earPianoExplorer"></div>
             <div class="ear-course-tabs" id="earCourseTabs" aria-label="听音课程"></div>
             <div class="ear-course-panel" id="earCoursePanel"></div>
@@ -173,24 +177,103 @@
         </section>
 
         <section class="tab-panel" id="scores">
-          <div class="page-heading">
-            <p class="eyebrow">乐谱练习</p>
-            <h2>按风格找真实曲目</h2>
-            <p>先收录适合入门的公共领域旋律；现代流行、电子、摇滚和金属曲目可以作为练习目标，后续通过授权谱或自己上传来练。</p>
-          </div>
-          <div class="score-categories" id="scoreCategories"></div>
-          <div class="score-tools">
-            <button class="score-mode active" data-score-mode="both">对照</button>
-            <button class="score-mode" data-score-mode="staff">五线谱</button>
-            <button class="score-mode" data-score-mode="numbered">简谱</button>
-          </div>
-          <div class="score-list" id="scoreList"></div>
-          <div class="resource-section">
-            <div class="section-heading">
-              <h3>可靠乐谱来源</h3>
-              <p>优先用公共版权和明确授权的乐谱来源；现代流行曲用上传/购买授权谱更稳。</p>
+          <div class="theory-library">
+            <header class="library-head">
+              <h2>乐理</h2>
+              <button class="library-search-button" type="button" aria-label="搜索乐理知识"></button>
+            </header>
+            <label class="library-search">
+              <span></span>
+              <input type="search" placeholder="搜索乐理知识" />
+            </label>
+
+            <button class="favorite-row" type="button">
+              <span class="favorite-star">★</span>
+              <strong>我的收藏</strong>
+              <em>›</em>
+            </button>
+
+            <section class="library-section">
+              <h3>基础乐理</h3>
+              <div class="theory-tile-grid">
+                <button class="theory-tile green" type="button" data-go="theory">
+                  <span>♪</span>
+                  <strong>音名</strong>
+                </button>
+                <button class="theory-tile orange" type="button" data-go="theory">
+                  <span>唱</span>
+                  <strong>唱名</strong>
+                </button>
+                <button class="theory-tile blue" type="button" data-go="theory">
+                  <span>#♭</span>
+                  <strong>调号</strong>
+                </button>
+                <button class="theory-tile purple" type="button" data-go="theory">
+                  <span>♭</span>
+                  <strong>升降号</strong>
+                </button>
+                <button class="theory-tile coral" type="button" data-go="theory">
+                  <span>度</span>
+                  <strong>音程</strong>
+                </button>
+                <button class="theory-tile rose" type="button" data-go="theory">
+                  <span>拍</span>
+                  <strong>节拍</strong>
+                </button>
+              </div>
+            </section>
+
+            <section class="library-section">
+              <h3>钢琴技巧</h3>
+              <div class="theory-tile-grid">
+                <button class="theory-tile green" type="button" data-go="theory">
+                  <span>手</span>
+                  <strong>指法</strong>
+                </button>
+                <button class="theory-tile purple" type="button" data-go="theory">
+                  <span>踏</span>
+                  <strong>踏板</strong>
+                </button>
+                <button class="theory-tile blue" type="button" data-go="theory">
+                  <span>连</span>
+                  <strong>连音</strong>
+                </button>
+                <button class="theory-tile yellow" type="button" data-go="theory">
+                  <span>和</span>
+                  <strong>和弦</strong>
+                </button>
+              </div>
+            </section>
+
+            <section class="library-section">
+              <h3>小汤同步</h3>
+              <div class="method-list">
+                <button type="button">
+                  <span>小汤钢琴教程　第一册</span>
+                  <em>›</em>
+                </button>
+                <button type="button">
+                  <span>小汤钢琴教程　第二册</span>
+                  <b>当前</b>
+                  <em>›</em>
+                </button>
+                <button type="button">
+                  <span>小汤钢琴教程　第三册</span>
+                  <em>›</em>
+                </button>
+              </div>
+            </section>
+
+            <div class="legacy-score-render" aria-hidden="true">
+              <div class="score-categories" id="scoreCategories"></div>
+              <div class="score-tools">
+                <button class="score-mode active" data-score-mode="both">对照</button>
+                <button class="score-mode" data-score-mode="staff">五线谱</button>
+                <button class="score-mode" data-score-mode="numbered">简谱</button>
+              </div>
+              <div class="score-list" id="scoreList"></div>
+              <div class="resource-grid" id="scoreResources"></div>
             </div>
-            <div class="resource-grid" id="scoreResources"></div>
           </div>
         </section>
 
@@ -237,7 +320,7 @@
           <div class="import-results" id="importResults"></div>
         </section>
 
-        <section class="tab-panel" id="checkin">
+        <section class="tab-panel" id="stats">
           <div class="simple-subpage-head">
             <button class="back-button" type="button" data-go="home">‹</button>
             <h2>学习统计</h2>
@@ -259,9 +342,48 @@
             <article><span>找音正确率</span><strong>91%</strong></article>
           </div>
 
+          <section class="mistake-card" data-go="theory">
+            <div class="section-row">
+              <h3>最近容易错的音</h3>
+              <span>›</span>
+            </div>
+            <div class="mistake-tags">
+              <span>F#</span>
+              <span>Bb</span>
+              <span>高音 Do</span>
+            </div>
+          </section>
+          <div class="section-heading log-heading">
+            <h3>打卡日志</h3>
+            <p>登录云同步后，电脑和手机会共用这些练习记录。</p>
+          </div>
+          <div class="record-summary">
+            <article><span>平均时长</span><strong id="avgMinutes">0 分钟</strong></article>
+            <article><span>最近练习</span><strong id="lastPractice">暂无</strong></article>
+          </div>
+          <div class="records-list" id="recordsList"></div>
+        </section>
+
+        <section class="tab-panel" id="sync">
+          <div class="simple-subpage-head">
+            <button class="back-button" type="button" data-go="home">‹</button>
+            <h2>学习同步</h2>
+          </div>
+          <section class="sync-hero-card" aria-label="学习同步说明">
+            <div class="cloud-visual">
+              <span></span>
+            </div>
+            <h3>登录后自动同步学习数据</h3>
+            <ul>
+              <li>学习进度（练习记录、练习题目位置）</li>
+              <li>正确率统计（听音、找音、看谱找键）</li>
+              <li>收藏内容（乐理笔记、错题本）</li>
+              <li>打卡记录（连续天数、累计时长）</li>
+            </ul>
+          </section>
           <section class="sync-panel simple-sync-panel" aria-label="学习同步">
             <div>
-              <p class="eyebrow">学习同步</p>
+              <p class="eyebrow">账号同步</p>
               <h3 id="syncTitle">未登录</h3>
               <p id="syncStatus">登录后，手机、平板和电脑会同步学习数据。</p>
             </div>
@@ -278,66 +400,15 @@
               <button class="ghost-action" type="button" id="signOut" hidden>退出登录</button>
             </div>
           </section>
-
-          <div class="page-heading mini-heading">
-            <p class="eyebrow">每日打卡</p>
-            <h2>记录今天练了什么</h2>
-            <p>不用写很长，能让明天知道从哪里继续就够了。</p>
-          </div>
-          <form class="checkin-form" id="checkinForm">
-            <label>
-              日期
-              <input type="date" id="practiceDate" required />
-            </label>
-            <label>
-              练习时长（分钟）
-              <input type="number" id="practiceMinutes" min="1" max="300" value="20" required />
-            </label>
-            <label>
-              今天练了什么
-              <select id="practiceTopic">
-                <option>手型和五指练习</option>
-                <option>识谱和中央 C</option>
-                <option>节拍器练习</option>
-                <option>单手练习</option>
-                <option>双手配合</option>
-                <option>音阶或和弦</option>
-                <option>自由练习</option>
-              </select>
-            </label>
-            <fieldset>
-              <legend>今天感觉</legend>
-              <div class="segmented">
-                <label><input type="radio" name="mood" value="轻松" checked />轻松</label>
-                <label><input type="radio" name="mood" value="一般" />一般</label>
-                <label><input type="radio" name="mood" value="困难" />困难</label>
-              </div>
-            </fieldset>
-            <label class="full">
-              备注
-              <textarea id="practiceNote" rows="4" placeholder="例如：右手第三指容易紧张，明天继续慢练。"></textarea>
-            </label>
-            <button class="primary-action" type="submit">保存打卡</button>
-            <p class="form-message" id="formMessage" role="status"></p>
-          </form>
-          <div class="section-heading log-heading">
-            <h3>打卡日志</h3>
-            <p>登录云同步后，电脑和手机会共用这些练习记录。</p>
-          </div>
-          <div class="record-summary">
-            <article><span>平均时长</span><strong id="avgMinutes">0 分钟</strong></article>
-            <article><span>最近练习</span><strong id="lastPractice">暂无</strong></article>
-          </div>
-          <div class="records-list" id="recordsList"></div>
         </section>
       </main>
     </div>
 
     <nav class="mobile-nav" aria-label="底部导航">
-      <button class="mobile-item active" data-tab="home">今日练习</button>
+      <button class="mobile-item active" data-tab="home">今日</button>
       <button class="mobile-item" data-tab="theory">练习</button>
       <button class="mobile-item" data-tab="scores">乐理</button>
-      <button class="mobile-item" data-tab="checkin">我的</button>
+      <button class="mobile-item" data-tab="sync">我的</button>
     </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
