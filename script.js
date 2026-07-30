@@ -287,6 +287,15 @@ let earPlaybackTimers = [];
 let pianoWarmGroupId = null;
 let pianoWarmStatus = "idle";
 let earPianoInitialPositioned = false;
+const midiState = {
+  access: null,
+  status: "idle",
+  message: "还没有连接电钢。",
+  inputs: [],
+  lastNote: null,
+  activeNotes: new Map(),
+  log: []
+};
 
 const pianoWhiteKeys = [
   { name: "C", octave: 4 },
@@ -845,6 +854,7 @@ const els = {
   findPianoExplorer: document.querySelector("#findPianoExplorer"),
   findCourseTabs: document.querySelector("#findCourseTabs"),
   findCoursePanel: document.querySelector("#findCoursePanel"),
+  midiPanel: document.querySelector("#midiPanel"),
   practiceLessons: document.querySelector("#practiceLessons"),
   theoryResources: document.querySelector("#theoryResources"),
   libraryTheoryResources: document.querySelector("#libraryTheoryResources"),
@@ -2754,13 +2764,132 @@ function renderFindStats() {
   return `<div class="ear-practice-stats"><span>本课统计</span><strong>${getAccuracy(stats)}</strong></div>`;
 }
 
+function midiNoteLabel(midi) {
+  const note = midiToPianoNote(midi);
+  const middleC = midi === 60 ? " · 中央 C" : "";
+  return `${displayPianoPitch(note)}${middleC}`;
+}
+
+function renderMidiPanel() {
+  if (!els.midiPanel) return;
+  const supported = "requestMIDIAccess" in navigator;
+  const inputs = midiState.inputs.length
+    ? midiState.inputs.map(input => `<li>${input.name || "未命名 MIDI 输入"}</li>`).join("")
+    : "<li>还没有检测到 MIDI 输入设备</li>";
+  const activeNotes = [...midiState.activeNotes.keys()].sort((a, b) => a - b).map(midiNoteLabel).join("、") || "暂无";
+  const log = midiState.log.length
+    ? midiState.log.map(item => `<li><strong>${item.note}</strong><span>${item.action}</span><em>${item.velocity}</em></li>`).join("")
+    : "<li class=\"empty-midi-log\">连接后按一下电钢，这里会显示按键记录。</li>";
+
+  els.midiPanel.innerHTML = `
+    <section class="midi-check-panel">
+      <button class="back-button" type="button" data-practice-mode="landing">‹</button>
+      <div class="midi-hero">
+        <span>▣</span>
+        <div>
+          <p class="eyebrow">MIDI 检测</p>
+          <h3>连接电钢，看看琴习能不能听见你按键</h3>
+          <p>先在电脑 Chrome/Edge 上试。iPhone 桌面版暂时不能直接识别 MIDI。</p>
+        </div>
+      </div>
+
+      <div class="midi-status-card ${supported ? midiState.status : "unsupported"}">
+        <span>${supported ? (midiState.status === "ready" ? "已连接" : "待连接") : "不支持"}</span>
+        <strong>${supported ? midiState.message : "当前浏览器不支持 Web MIDI"}</strong>
+        <p>${supported ? "用 USB TO HOST 或 MIDI 转 USB 线连接电钢后，点击下面按钮授权。" : "请在 Mac/Windows 的 Chrome 或 Edge 里打开琴习测试；iPhone Safari/PWA 基本不开放 Web MIDI。"}</p>
+      </div>
+
+      <button class="primary-action midi-connect-button" type="button" data-midi-connect ${!supported ? "disabled" : ""}>连接 MIDI 设备</button>
+
+      <div class="midi-live-grid">
+        <article>
+          <span>最近按键</span>
+          <strong>${midiState.lastNote ? midiState.lastNote.note : "暂无"}</strong>
+          <small>${midiState.lastNote ? `${midiState.lastNote.action} · 力度 ${midiState.lastNote.velocity}` : "按下电钢后会实时显示"}</small>
+        </article>
+        <article>
+          <span>正在按住</span>
+          <strong>${activeNotes}</strong>
+          <small>以后判断和弦会用到这里</small>
+        </article>
+      </div>
+
+      <section class="midi-device-list">
+        <h4>已发现设备</h4>
+        <ul>${inputs}</ul>
+      </section>
+
+      <section class="midi-log">
+        <h4>按键记录</h4>
+        <ul>${log}</ul>
+      </section>
+    </section>
+  `;
+}
+
+function handleMidiMessage(event) {
+  const [status, noteNumber, velocity = 0] = event.data;
+  const command = status & 0xf0;
+  const isNoteOn = command === 0x90 && velocity > 0;
+  const isNoteOff = command === 0x80 || (command === 0x90 && velocity === 0);
+  if (!isNoteOn && !isNoteOff) return;
+
+  const note = midiNoteLabel(noteNumber);
+  const action = isNoteOn ? "按下" : "松开";
+  if (isNoteOn) midiState.activeNotes.set(noteNumber, velocity);
+  if (isNoteOff) midiState.activeNotes.delete(noteNumber);
+  midiState.lastNote = { note, action, velocity };
+  midiState.log.unshift({ note, action, velocity: `力度 ${velocity}` });
+  midiState.log = midiState.log.slice(0, 12);
+  renderMidiPanel();
+}
+
+function attachMidiInputs() {
+  if (!midiState.access) return;
+  midiState.inputs = [...midiState.access.inputs.values()];
+  midiState.inputs.forEach(input => {
+    input.onmidimessage = handleMidiMessage;
+  });
+}
+
+async function connectMidiDevice() {
+  if (!("requestMIDIAccess" in navigator)) {
+    midiState.status = "unsupported";
+    midiState.message = "当前浏览器不支持 Web MIDI。";
+    renderMidiPanel();
+    return;
+  }
+
+  midiState.status = "connecting";
+  midiState.message = "正在请求 MIDI 授权...";
+  renderMidiPanel();
+  try {
+    midiState.access = await navigator.requestMIDIAccess({ sysex: false });
+    attachMidiInputs();
+    midiState.access.onstatechange = () => {
+      attachMidiInputs();
+      midiState.message = midiState.inputs.length ? `已连接 ${midiState.inputs.length} 个 MIDI 输入。` : "已授权，但还没有发现 MIDI 输入设备。";
+      midiState.status = midiState.inputs.length ? "ready" : "empty";
+      renderMidiPanel();
+    };
+    midiState.status = midiState.inputs.length ? "ready" : "empty";
+    midiState.message = midiState.inputs.length ? `已连接 ${midiState.inputs.length} 个 MIDI 输入。` : "已授权，但还没有发现 MIDI 输入设备。";
+  } catch (error) {
+    midiState.status = "error";
+    midiState.message = error?.message || "MIDI 授权失败，请检查浏览器权限。";
+  }
+  renderMidiPanel();
+}
+
 function setPracticeMode(mode) {
   practiceMode = mode;
   if (els.practiceLanding) els.practiceLanding.hidden = mode !== "landing";
   const earSection = document.querySelector("#ear-training");
   const findSection = document.querySelector("#find-training");
+  const midiSection = document.querySelector("#midi-training");
   if (earSection) earSection.hidden = mode !== "ear";
   if (findSection) findSection.hidden = mode !== "find";
+  if (midiSection) midiSection.hidden = mode !== "midi";
 }
 
 function renderPracticeLanding() {
@@ -2771,6 +2900,7 @@ function renderPracticeLanding() {
   if (els.findPianoExplorer) els.findPianoExplorer.innerHTML = "";
   if (els.findCourseTabs) els.findCourseTabs.innerHTML = "";
   if (els.findCoursePanel) els.findCoursePanel.innerHTML = "";
+  if (els.midiPanel) els.midiPanel.innerHTML = "";
 }
 
 function renderFindCourseCards() {
@@ -2963,6 +3093,7 @@ function renderPracticeTraining() {
   }
   setPracticeMode(practiceMode);
   if (practiceMode === "find") renderFindTraining();
+  else if (practiceMode === "midi") renderMidiPanel();
   else renderEarTraining();
 }
 
@@ -4287,7 +4418,21 @@ function setupEvents() {
       findState.view = "entry";
       resetFindQuestion();
     }
+    if (practiceMode === "midi") {
+      midiState.message = midiState.access ? midiState.message : "还没有连接电钢。";
+    }
     renderPracticeTraining();
+  });
+
+  els.midiPanel?.addEventListener("click", event => {
+    if (event.target.closest("[data-practice-mode='landing']")) {
+      renderPracticeLanding();
+      return;
+    }
+
+    if (event.target.closest("[data-midi-connect]")) {
+      connectMidiDevice();
+    }
   });
 
   els.earPianoExplorer?.addEventListener("click", event => {

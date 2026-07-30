@@ -272,6 +272,11 @@ button {
   color: #2f7fcc;
 }
 
+.practice-route-card.purple > span {
+  background: #efe9ff;
+  color: #7250c9;
+}
+
 .practice-route-card strong,
 .practice-route-card small {
   display: block;
@@ -304,6 +309,164 @@ button {
 
 .ear-training-heading h3 {
   font-size: 30px;
+}
+
+.midi-check-panel {
+  display: grid;
+  max-width: 720px;
+  gap: 14px;
+}
+
+.midi-hero,
+.midi-status-card,
+.midi-live-grid article,
+.midi-device-list,
+.midi-log {
+  border: 1px solid rgba(25, 147, 106, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 253, 248, 0.92);
+  box-shadow: 0 10px 28px rgba(53, 43, 31, 0.07);
+}
+
+.midi-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+}
+
+.midi-hero > span {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border-radius: 50%;
+  background: #efe9ff;
+  color: #7250c9;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.midi-hero h3,
+.midi-hero p,
+.midi-status-card p,
+.midi-device-list h4,
+.midi-log h4 {
+  margin: 0;
+}
+
+.midi-hero h3 {
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.midi-hero p:not(.eyebrow),
+.midi-status-card p {
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.midi-status-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.midi-status-card > span {
+  width: max-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #e1f4ea;
+  color: #13835f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.midi-status-card.connecting > span,
+.midi-status-card.empty > span {
+  background: #fff2db;
+  color: #aa6d1f;
+}
+
+.midi-status-card.error > span,
+.midi-status-card.unsupported > span {
+  background: #fde7e7;
+  color: #b33434;
+}
+
+.midi-status-card strong {
+  font-size: 20px;
+}
+
+.midi-connect-button {
+  justify-self: start;
+}
+
+.midi-live-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.midi-live-grid article {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+}
+
+.midi-live-grid span,
+.midi-device-list h4,
+.midi-log h4 {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.midi-live-grid strong {
+  font-size: 24px;
+}
+
+.midi-live-grid small {
+  color: var(--muted);
+}
+
+.midi-device-list,
+.midi-log {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.midi-device-list ul,
+.midi-log ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.midi-device-list li,
+.midi-log li {
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f5f7f2;
+}
+
+.midi-log li:not(.empty-midi-log) {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.midi-log span,
+.midi-log em,
+.empty-midi-log {
+  color: var(--muted);
+  font-style: normal;
 }
 
 .ear-training-heading p:not(.eyebrow) {
@@ -4288,6 +4451,16 @@ body.staff-landscape-mode .bottom-nav {
     aspect-ratio: 1;
     font-size: 22px;
   }
+
+  .midi-hero,
+  .midi-live-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .midi-hero > span {
+    width: 58px;
+    height: 58px;
+  }
 }
 
 @media (max-width: 420px) {
@@ -4328,6 +4501,10 @@ body.staff-landscape-mode .bottom-nav {
   .task-icon {
     width: 48px;
     height: 48px;
+  }
+
+  .midi-log li:not(.empty-midi-log) {
+    grid-template-columns: 1fr;
   }
 
   .theory-library {
