@@ -3371,6 +3371,7 @@ body.staff-landscape-mode .bottom-nav {
 
 /* Simplified app shell */
 .simple-home {
+  position: relative;
   display: grid;
   gap: 16px;
   max-width: 760px;
@@ -3390,8 +3391,8 @@ body.staff-landscape-mode .bottom-nav {
   margin-left: auto;
 }
 
-#theory .page-heading h2 {
-  font-size: clamp(28px, 7vw, 38px);
+#theory .practice-page-heading h2 {
+  font-size: clamp(38px, 10vw, 52px);
 }
 
 .theory-library {
@@ -3537,6 +3538,19 @@ body.staff-landscape-mode .bottom-nav {
   font-size: 18px;
 }
 
+.trusted-theory-section .resource-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.trusted-theory-section .resource-card {
+  padding: 14px;
+}
+
+.trusted-theory-section .resource-card h4 {
+  font-size: 17px;
+}
+
 .theory-tile-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -3647,6 +3661,7 @@ body.staff-landscape-mode .bottom-nav {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  min-height: 104px;
   padding: 6px 2px 4px;
 }
 
@@ -3741,41 +3756,44 @@ body.staff-landscape-mode .bottom-nav {
 }
 
 .piano-scene {
-  position: relative;
-  justify-self: end;
-  width: 170px;
-  height: 88px;
-  margin-top: -12px;
-  margin-bottom: -8px;
+  position: absolute;
+  top: 56px;
+  right: 10px;
+  z-index: 0;
+  width: 126px;
+  height: 64px;
+  margin: 0;
+  pointer-events: none;
 }
 
 .mini-grand {
   position: absolute;
-  right: 42px;
-  bottom: 10px;
-  width: 108px;
-  height: 66px;
+  right: 8px;
+  bottom: 8px;
+  width: 112px;
+  height: 58px;
 }
 
 .piano-lid {
   position: absolute;
   top: 2px;
   right: 6px;
-  width: 72px;
-  height: 42px;
-  border-radius: 46px 18px 4px 18px;
-  background: #252825;
+  width: 74px;
+  height: 38px;
+  border-radius: 46px 18px 5px 18px;
+  background: linear-gradient(145deg, #20231f, #353931);
   transform: skewX(-12deg);
+  box-shadow: 0 14px 22px rgba(35, 31, 25, 0.14);
 }
 
 .piano-body {
   position: absolute;
   right: 22px;
-  bottom: 21px;
-  width: 80px;
-  height: 25px;
+  bottom: 19px;
+  width: 82px;
+  height: 23px;
   border-radius: 6px 6px 9px 9px;
-  background: #30332f;
+  background: linear-gradient(180deg, #3a3e37, #242722);
   box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.18);
 }
 
@@ -3814,13 +3832,7 @@ body.staff-landscape-mode .bottom-nav {
 }
 
 .plant-pot {
-  position: absolute;
-  right: 8px;
-  bottom: 6px;
-  width: 22px;
-  height: 30px;
-  border-radius: 4px 4px 8px 8px;
-  background: #d9975d;
+  display: none;
 }
 
 .plant-pot::before,
@@ -3989,6 +4001,11 @@ body.staff-landscape-mode .bottom-nav {
 .task-icon.blue {
   background: #e7f3ff;
   color: #2f7fcc;
+}
+
+.task-icon.teal {
+  background: #e3f6f1;
+  color: #13835f;
 }
 
 .task-card strong {

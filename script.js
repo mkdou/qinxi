@@ -847,6 +847,7 @@ const els = {
   findCoursePanel: document.querySelector("#findCoursePanel"),
   practiceLessons: document.querySelector("#practiceLessons"),
   theoryResources: document.querySelector("#theoryResources"),
+  libraryTheoryResources: document.querySelector("#libraryTheoryResources"),
   practiceResources: document.querySelector("#practiceResources"),
   scoreResources: document.querySelector("#scoreResources"),
   scoreCategories: document.querySelector("#scoreCategories"),
@@ -1983,17 +1984,36 @@ function getEarCourse(courseId = earState.course) {
 function readRecentPractice() {
   try {
     const saved = JSON.parse(localStorage.getItem(recentPracticeKey) || "null");
-    return saved && getEarCourse(saved.courseId)
-      ? saved
-      : { courseId: "single", groupId: "octave4", updatedAt: new Date().toISOString() };
+    if (saved?.type === "find" && getFindCourse(saved.courseId)) return saved;
+    if (saved?.type === "explorer") return saved;
+    if (saved && getEarCourse(saved.courseId)) return { type: "ear", ...saved };
+    return { type: "ear", courseId: "single", groupId: "octave4", updatedAt: new Date().toISOString() };
   } catch {
-    return { courseId: "single", groupId: "octave4", updatedAt: new Date().toISOString() };
+    return { type: "ear", courseId: "single", groupId: "octave4", updatedAt: new Date().toISOString() };
   }
 }
 
 function rememberRecentPractice(courseId = earState.course, groupId = earState.groupId) {
   try {
-    localStorage.setItem(recentPracticeKey, JSON.stringify({ courseId, groupId, staffStageId: earState.staffStageId, updatedAt: new Date().toISOString() }));
+    localStorage.setItem(recentPracticeKey, JSON.stringify({ type: "ear", courseId, groupId, staffStageId: earState.staffStageId, updatedAt: new Date().toISOString() }));
+  } catch {
+    // Local storage can fail in private browsing; the practice still works without this shortcut.
+  }
+  renderRecentPracticeEntry();
+}
+
+function rememberFindPractice(courseId = findState.course) {
+  try {
+    localStorage.setItem(recentPracticeKey, JSON.stringify({ type: "find", courseId, groupId: findState.groupId, clef: findState.clef, updatedAt: new Date().toISOString() }));
+  } catch {
+    // Local storage can fail in private browsing; the practice still works without this shortcut.
+  }
+  renderRecentPracticeEntry();
+}
+
+function rememberExplorerPractice() {
+  try {
+    localStorage.setItem(recentPracticeKey, JSON.stringify({ type: "explorer", groupId: earState.groupId, updatedAt: new Date().toISOString() }));
   } catch {
     // Local storage can fail in private browsing; the practice still works without this shortcut.
   }
@@ -2002,6 +2022,25 @@ function rememberRecentPractice(courseId = earState.course, groupId = earState.g
 
 function applyRecentPractice() {
   const recent = readRecentPractice();
+  if (recent.type === "find") {
+    practiceMode = "find";
+    findState.course = getFindCourse(recent.courseId).id;
+    findState.groupId = recent.groupId || "octave4";
+    findState.clef = recent.clef || "treble";
+    findState.view = "course";
+    resetFindQuestion();
+    renderPracticeTraining();
+    return;
+  }
+  if (recent.type === "explorer") {
+    practiceMode = "ear";
+    earState.groupId = recent.groupId || "octave4";
+    earState.view = "explorer";
+    resetEarQuestion();
+    renderPracticeTraining();
+    return;
+  }
+  practiceMode = "ear";
   earState.course = recent.courseId;
   earState.groupId = recent.groupId || "octave4";
   earState.staffStageId = recent.staffStageId || "stage1";
@@ -2012,6 +2051,29 @@ function applyRecentPractice() {
 
 function renderRecentPracticeEntry() {
   const recent = readRecentPractice();
+  if (recent.type === "explorer") {
+    if (els.continuePracticeTitle) els.continuePracticeTitle.textContent = "琴键探索（88键）";
+    if (els.continuePracticeSubtitle) els.continuePracticeSubtitle.textContent = "从中央 C 开始熟悉琴键音色";
+    if (els.continuePracticeProgress) els.continuePracticeProgress.style.width = "20%";
+    return;
+  }
+  if (recent.type === "find") {
+    const course = getFindCourse(recent.courseId);
+    const group = getEarGroup(recent.groupId);
+    const statsId = course.id === "staff" || course.id === "ledger"
+      ? `find-${course.id}-${recent.clef || "treble"}`
+      : `find-${course.id}-${group.id}`;
+    const stats = getPersistedLevelStats(statsId);
+    const attempts = Number(stats.attempts) || 0;
+    const progress = Math.min(100, attempts * 10);
+
+    if (els.continuePracticeTitle) els.continuePracticeTitle.textContent = course.title;
+    if (els.continuePracticeSubtitle) els.continuePracticeSubtitle.textContent = course.id === "staff" || course.id === "ledger"
+      ? `${recent.clef === "bass" ? "低音谱号" : "高音谱号"} · ${course.summary}`
+      : `${group.label}（${group.range}）`;
+    if (els.continuePracticeProgress) els.continuePracticeProgress.style.width = `${progress}%`;
+    return;
+  }
   const course = getEarCourse(recent.courseId);
   const group = getEarGroup(recent.groupId);
   const previousCourse = earState.course;
@@ -2870,6 +2932,7 @@ function answerFindKeyboard(midi) {
   const isCorrect = midi === question.target.midi;
   findState.lastAnswer = midi;
   findState.status = isCorrect ? "correct" : "wrong";
+  rememberFindPractice(findState.course);
   recordQuestionAttempt(findStatsId(), isCorrect);
   upsertAppLearningRecord();
   renderFindCoursePanel();
@@ -2881,6 +2944,7 @@ function answerFindStaff(mark) {
   const isCorrect = mark.step === question.target.step;
   findState.lastAnswer = mark.step;
   findState.status = isCorrect ? "correct" : "wrong";
+  rememberFindPractice(findState.course);
   recordQuestionAttempt(findStatsId(), isCorrect);
   upsertAppLearningRecord();
   renderFindCoursePanel();
@@ -3739,9 +3803,11 @@ function renderResources() {
       )
       .join("");
 
-  els.theoryResources.innerHTML = render(trustedResources.theory);
-  els.practiceResources.innerHTML = render(trustedResources.practice);
-  els.scoreResources.innerHTML = render(trustedResources.scores);
+  const theoryMarkup = render(trustedResources.theory);
+  if (els.theoryResources) els.theoryResources.innerHTML = theoryMarkup;
+  if (els.libraryTheoryResources) els.libraryTheoryResources.innerHTML = theoryMarkup;
+  if (els.practiceResources) els.practiceResources.innerHTML = render(trustedResources.practice);
+  if (els.scoreResources) els.scoreResources.innerHTML = render(trustedResources.scores);
 }
 
 function renderScores() {
@@ -4182,11 +4248,17 @@ function setupEvents() {
       event.preventDefault();
       const homeCourse = item.dataset.earHomeCourse;
       if (item.hasAttribute("data-ear-continue")) {
-        practiceMode = "ear";
         applyRecentPractice();
+      } else if (item.hasAttribute("data-ear-explorer-home")) {
+        practiceMode = "ear";
+        earState.view = "explorer";
+        resetEarQuestion();
+        rememberExplorerPractice();
+        renderPracticeTraining();
       } else if (item.hasAttribute("data-find-home")) {
         practiceMode = "find";
         findState.view = "entry";
+        rememberFindPractice(findState.course);
         resetFindQuestion();
         renderPracticeTraining();
       } else if (homeCourse) {
@@ -4237,7 +4309,8 @@ function setupEvents() {
     if (groupOption) {
       earState.groupId = groupOption.dataset.earGroupOption;
       resetEarQuestion();
-      rememberRecentPractice(earState.course, earState.groupId);
+      if (earState.view === "explorer") rememberExplorerPractice();
+      else rememberRecentPractice(earState.course, earState.groupId);
       renderEarPianoExplorer();
       if (earState.view === "course") renderEarCoursePanel();
       if (earState.view === "explorer") renderEarExplorerPage();
@@ -4288,6 +4361,7 @@ function setupEvents() {
       findState.course = findStartButton.dataset.findStartCourse;
       findState.view = "intro";
       resetFindQuestion();
+      rememberFindPractice(findState.course);
       renderFindTraining();
       return;
     }
@@ -4296,6 +4370,7 @@ function setupEvents() {
       practiceMode = "find";
       findState.view = "course";
       resetFindQuestion();
+      rememberFindPractice(findState.course);
       renderFindTraining();
       return;
     }
@@ -4316,6 +4391,7 @@ function setupEvents() {
     if (viewButton) {
       earState.view = viewButton.dataset.earView;
       if (earState.view !== "course") resetEarQuestion();
+      if (earState.view === "explorer") rememberExplorerPractice();
       renderEarTraining();
       return;
     }
@@ -4414,6 +4490,7 @@ function setupEvents() {
       findState.course = findStartButton.dataset.findStartCourse;
       findState.view = "intro";
       resetFindQuestion();
+      rememberFindPractice(findState.course);
       renderFindTraining();
       return;
     }
@@ -4422,6 +4499,7 @@ function setupEvents() {
       practiceMode = "find";
       findState.view = "course";
       resetFindQuestion();
+      rememberFindPractice(findState.course);
       renderFindTraining();
       return;
     }
