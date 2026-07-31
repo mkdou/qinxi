@@ -3,5 +3,8 @@ work/
 .DS_Store
 node_modules/
 dist/
+.gem-cache/
+.local-gems/
+.ruby-home/
 ios/App/Pods/
 ios/App/Podfile.lock

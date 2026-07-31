@@ -8,7 +8,6 @@
 
 - Xcode
 - Node.js 和 pnpm
-- CocoaPods（可用 `brew install cocoapods`）
 - Apple ID；如果要长期装到手机，后续需要 Apple Developer/TestFlight
 
 ## 初始化 iOS 工程
@@ -16,12 +15,17 @@
 ```bash
 pnpm install
 pnpm run build
-pnpm exec cap add ios
 pnpm run cap:sync:ios
 pnpm run cap:open:ios
 ```
 
-生成 iOS 工程后，在 Xcode 里选择真机运行。模拟器无法连接你的电钢蓝牙 MIDI。
+当前工程已经使用 Capacitor 的 Swift Package Manager 模板生成了 `ios/`，不需要 CocoaPods。生成 iOS 工程后，在 Xcode 里选择真机运行。模拟器无法连接你的电钢蓝牙 MIDI。
+
+如果 `xcodebuild` 报错说 active developer directory 是 Command Line Tools，需要先安装完整 Xcode，然后执行：
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
 
 ## JS 侧约定
 
