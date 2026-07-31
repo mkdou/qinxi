@@ -1,0 +1,19 @@
+{
+  "name": "qinxi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Qinxi piano practice app with a Capacitor iOS shell.",
+  "scripts": {
+    "build": "node scripts/build-capacitor-web.mjs",
+    "cap:add:ios": "pnpm exec cap add ios",
+    "cap:sync:ios": "pnpm run build && pnpm exec cap sync ios",
+    "cap:open:ios": "pnpm exec cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}

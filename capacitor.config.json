@@ -1,0 +1,8 @@
+{
+  "appId": "com.qinxi.practice",
+  "appName": "琴习",
+  "webDir": "dist",
+  "server": {
+    "iosScheme": "qinxi"
+  }
+}

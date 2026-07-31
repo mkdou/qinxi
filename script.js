@@ -294,7 +294,9 @@ const midiState = {
   inputs: [],
   lastNote: null,
   activeNotes: new Map(),
-  log: []
+  log: [],
+  nativeListener: null,
+  source: "web"
 };
 
 const pianoWhiteKeys = [
@@ -2770,9 +2772,20 @@ function midiNoteLabel(midi) {
   return `${displayPianoPitch(note)}${middleC}`;
 }
 
+function getNativeMidiPlugin() {
+  return window.Capacitor?.Plugins?.QinxiMidi || null;
+}
+
+function isNativeMidiAvailable() {
+  return Boolean(getNativeMidiPlugin());
+}
+
 function renderMidiPanel() {
   if (!els.midiPanel) return;
-  const supported = "requestMIDIAccess" in navigator;
+  const webSupported = "requestMIDIAccess" in navigator;
+  const nativeSupported = isNativeMidiAvailable();
+  const supported = webSupported || nativeSupported;
+  const supportLabel = nativeSupported ? "原生 MIDI" : webSupported ? "Web MIDI" : "不支持";
   const inputs = midiState.inputs.length
     ? midiState.inputs.map(input => `<li>${input.name || "未命名 MIDI 输入"}</li>`).join("")
     : "<li>还没有检测到 MIDI 输入设备</li>";
@@ -2785,18 +2798,18 @@ function renderMidiPanel() {
     <section class="midi-check-panel">
       <button class="back-button" type="button" data-practice-mode="landing">‹</button>
       <div class="midi-hero">
-        <span>▣</span>
+          <span>▣</span>
         <div>
           <p class="eyebrow">MIDI 检测</p>
           <h3>连接电钢，看看琴习能不能听见你按键</h3>
-          <p>先在电脑 Chrome/Edge 上试。iPhone 桌面版暂时不能直接识别 MIDI。</p>
+          <p>${nativeSupported ? "当前处在原生 App 环境，可以尝试连接蓝牙 MIDI 电钢。" : "电脑 Chrome/Edge 可用 Web MIDI；iPhone 网页版需要原生 App 壳。"}</p>
         </div>
       </div>
 
       <div class="midi-status-card ${supported ? midiState.status : "unsupported"}">
         <span>${supported ? (midiState.status === "ready" ? "已连接" : "待连接") : "不支持"}</span>
-        <strong>${supported ? midiState.message : "当前浏览器不支持 Web MIDI"}</strong>
-        <p>${supported ? "用 USB TO HOST 或 MIDI 转 USB 线连接电钢后，点击下面按钮授权。" : "请在 Mac/Windows 的 Chrome 或 Edge 里打开琴习测试；iPhone Safari/PWA 基本不开放 Web MIDI。"}</p>
+        <strong>${supported ? midiState.message : "当前环境不支持 MIDI 连接"}</strong>
+        <p>${supported ? `${supportLabel} 通道可用。${nativeSupported ? "请先在 iOS 系统蓝牙 MIDI 里配对电钢，再回到琴习连接。" : "用 USB TO HOST 或 MIDI 转 USB 线连接电钢后，点击下面按钮授权。"}` : "请在 Mac/Windows 的 Chrome 或 Edge 里测试 Web MIDI；iPhone Safari/PWA 需要升级成原生 App 才能读蓝牙 MIDI。"}</p>
       </div>
 
       <button class="primary-action midi-connect-button" type="button" data-midi-connect ${!supported ? "disabled" : ""}>连接 MIDI 设备</button>
@@ -2834,12 +2847,18 @@ function handleMidiMessage(event) {
   const isNoteOff = command === 0x80 || (command === 0x90 && velocity === 0);
   if (!isNoteOn && !isNoteOff) return;
 
+  recordMidiNoteEvent({ midi: noteNumber, velocity, action: isNoteOn ? "按下" : "松开" });
+}
+
+function recordMidiNoteEvent({ midi, velocity = 0, action = "按下" }) {
+  const noteNumber = Number(midi);
+  if (!Number.isFinite(noteNumber)) return;
   const note = midiNoteLabel(noteNumber);
-  const action = isNoteOn ? "按下" : "松开";
-  if (isNoteOn) midiState.activeNotes.set(noteNumber, velocity);
-  if (isNoteOff) midiState.activeNotes.delete(noteNumber);
-  midiState.lastNote = { note, action, velocity };
-  midiState.log.unshift({ note, action, velocity: `力度 ${velocity}` });
+  if (action === "按下" || action === "noteOn") midiState.activeNotes.set(noteNumber, velocity);
+  if (action === "松开" || action === "noteOff") midiState.activeNotes.delete(noteNumber);
+  const displayAction = action === "noteOn" ? "按下" : action === "noteOff" ? "松开" : action;
+  midiState.lastNote = { note, action: displayAction, velocity };
+  midiState.log.unshift({ note, action: displayAction, velocity: `力度 ${velocity}` });
   midiState.log = midiState.log.slice(0, 12);
   renderMidiPanel();
 }
@@ -2853,6 +2872,11 @@ function attachMidiInputs() {
 }
 
 async function connectMidiDevice() {
+  if (isNativeMidiAvailable()) {
+    await connectNativeMidiDevice();
+    return;
+  }
+
   if (!("requestMIDIAccess" in navigator)) {
     midiState.status = "unsupported";
     midiState.message = "当前浏览器不支持 Web MIDI。";
@@ -2877,6 +2901,40 @@ async function connectMidiDevice() {
   } catch (error) {
     midiState.status = "error";
     midiState.message = error?.message || "MIDI 授权失败，请检查浏览器权限。";
+  }
+  renderMidiPanel();
+}
+
+async function connectNativeMidiDevice() {
+  const plugin = getNativeMidiPlugin();
+  if (!plugin) {
+    midiState.status = "unsupported";
+    midiState.message = "当前原生 App 没有注册 QinxiMidi 插件。";
+    renderMidiPanel();
+    return;
+  }
+
+  midiState.status = "connecting";
+  midiState.source = "native";
+  midiState.message = "正在连接 iOS 蓝牙 MIDI...";
+  renderMidiPanel();
+  try {
+    if (!midiState.nativeListener && plugin.addListener) {
+      midiState.nativeListener = await plugin.addListener("midiEvent", event => {
+        recordMidiNoteEvent({
+          midi: event.midi ?? event.noteNumber,
+          velocity: event.velocity ?? 0,
+          action: event.type === "noteOff" ? "noteOff" : "noteOn"
+        });
+      });
+    }
+    const result = plugin.start ? await plugin.start() : await plugin.connect();
+    midiState.inputs = result?.inputs || result?.devices || [{ name: "iOS 蓝牙 MIDI" }];
+    midiState.status = "ready";
+    midiState.message = midiState.inputs.length ? `已连接 ${midiState.inputs.length} 个 MIDI 输入。` : "原生 MIDI 已启动，等待设备输入。";
+  } catch (error) {
+    midiState.status = "error";
+    midiState.message = error?.message || "原生 MIDI 连接失败，请检查蓝牙 MIDI 配对。";
   }
   renderMidiPanel();
 }
