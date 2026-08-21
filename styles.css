@@ -1875,6 +1875,21 @@ body.staff-landscape-mode .bottom-nav {
   font-weight: 800;
 }
 
+.primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.find-submit-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.find-submit-row .primary-action {
+  min-width: 160px;
+}
+
 .today-card p:not(.eyebrow) {
   color: var(--muted);
   line-height: 1.7;

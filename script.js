@@ -281,7 +281,8 @@ const findState = {
   clef: "treble",
   question: null,
   status: "idle",
-  lastAnswer: null
+  lastAnswer: null,
+  pendingStaffStep: null
 };
 let earPlaybackTimers = [];
 let pianoWarmGroupId = null;
@@ -2746,6 +2747,7 @@ function resetFindQuestion() {
   findState.question = null;
   findState.status = "idle";
   findState.lastAnswer = null;
+  findState.pendingStaffStep = null;
 }
 
 function findTargetPool() {
@@ -3041,11 +3043,13 @@ function renderFindStaffStage(question) {
   const stepGap = 13;
   const lines = [0, 2, 4, 6, 8].map(step => `<line x1="38" y1="${staffMarkY(step, bottomLineY, stepGap)}" x2="412" y2="${staffMarkY(step, bottomLineY, stepGap)}" stroke="#333" stroke-width="1.7" />`).join("");
   const target = question.target;
-  const answer = Number.isFinite(findState.lastAnswer) ? staffPositionFromStep(findState.clef, findState.lastAnswer) : null;
+  const displayStep = findState.status === "idle" ? findState.pendingStaffStep : findState.lastAnswer;
+  const answer = Number.isFinite(displayStep) ? staffPositionFromStep(findState.clef, displayStep) : null;
   const answerMarkup = answer ? (() => {
     const y = staffMarkY(answer.step, bottomLineY, stepGap);
-    const correct = answer.step === target.step;
-    return `${staffLedgerLinesForMark(292, answer.step, bottomLineY, stepGap)}<ellipse cx="292" cy="${y}" rx="16" ry="11" fill="${correct ? "#2e9b5f" : "#d93636"}" transform="rotate(-18 292 ${y})" />`;
+    const correct = findState.status !== "idle" && answer.step === target.step;
+    const fill = findState.status === "idle" ? "#c88a2a" : correct ? "#2e9b5f" : "#d93636";
+    return `${staffLedgerLinesForMark(292, answer.step, bottomLineY, stepGap)}<ellipse cx="292" cy="${y}" rx="16" ry="11" fill="${fill}" transform="rotate(-18 292 ${y})" />`;
   })() : "";
   const correctionMarkup = findState.status === "wrong"
     ? `${staffLedgerLinesForMark(348, target.step, bottomLineY, stepGap)}<ellipse cx="348" cy="${staffMarkY(target.step, bottomLineY, stepGap)}" rx="16" ry="11" fill="#2e9b5f" transform="rotate(-18 348 ${staffMarkY(target.step, bottomLineY, stepGap)})" />`
@@ -3067,9 +3071,16 @@ function renderFindCoursePanel() {
   const question = ensureFindQuestion();
   const isKeyboard = findState.course === "natural" || findState.course === "black";
   const selectedNote = Number.isFinite(findState.lastAnswer) && isKeyboard ? midiToPianoNote(Number(findState.lastAnswer)) : null;
+  const pendingStaff = !isKeyboard && Number.isFinite(findState.pendingStaffStep)
+    ? staffPositionFromStep(findState.clef, findState.pendingStaffStep)
+    : null;
   const target = question.target;
   const feedback = findState.status === "idle"
-    ? isKeyboard ? "请在键盘上点出目标音。" : "请在五线谱上点击目标音所在的线或间。"
+    ? isKeyboard
+      ? "请在键盘上点出目标音。"
+      : pendingStaff
+        ? `已选择 ${staffPitchText(pendingStaff)}，可以继续点别的位置调整，确认后提交。`
+        : "请在五线谱上点击目标音所在的线或间。"
     : findState.status === "correct"
       ? `回答正确，目标音是 ${isKeyboard ? displayPianoPitch(target) : staffPitchText(target)}。`
       : `回答错误。你选的是 ${isKeyboard ? displayPianoPitch(selectedNote) : staffPitchText(staffPositionFromStep(findState.clef, Number(findState.lastAnswer)))}，正确答案是 ${isKeyboard ? displayPianoPitch(target) : staffPitchText(target)}。`;
@@ -3101,6 +3112,7 @@ function renderFindCoursePanel() {
           maxMidi: getEarGroup(findState.groupId).maxMidi
         }) : renderFindStaffStage(question)}
         <p class="ear-feedback ${findState.status}">${feedback}</p>
+        ${!isKeyboard && findState.status === "idle" ? `<div class="find-submit-row"><button class="primary-action" type="button" data-find-submit-staff ${pendingStaff ? "" : "disabled"}>确认提交</button></div>` : ""}
         ${findState.status !== "idle" ? `<button class="primary-action ear-next" type="button" data-find-next>下一题</button>` : ""}
       </section>
     </section>
@@ -3126,11 +3138,18 @@ function answerFindKeyboard(midi) {
   renderFindCoursePanel();
 }
 
-function answerFindStaff(mark) {
+function selectFindStaff(mark) {
   if (findState.status !== "idle" || !mark) return;
+  findState.pendingStaffStep = mark.step;
+  renderFindCoursePanel();
+}
+
+function submitFindStaffAnswer() {
+  if (findState.status !== "idle" || !Number.isFinite(findState.pendingStaffStep)) return;
   const question = ensureFindQuestion();
-  const isCorrect = mark.step === question.target.step;
-  findState.lastAnswer = mark.step;
+  const isCorrect = findState.pendingStaffStep === question.target.step;
+  findState.lastAnswer = findState.pendingStaffStep;
+  findState.pendingStaffStep = null;
   findState.status = isCorrect ? "correct" : "wrong";
   rememberFindPractice(findState.course);
   recordQuestionAttempt(findStatsId(), isCorrect);
@@ -4580,7 +4599,12 @@ function setupEvents() {
 
     const findStaff = event.target.closest("[data-find-staff]");
     if (findStaff) {
-      answerFindStaff(staffMarkFromSvgEvent(event));
+      selectFindStaff(staffMarkFromSvgEvent(event));
+      return;
+    }
+
+    if (event.target.closest("[data-find-submit-staff]")) {
+      submitFindStaffAnswer();
       return;
     }
 
@@ -4709,7 +4733,12 @@ function setupEvents() {
 
     const findStaff = event.target.closest("[data-find-staff]");
     if (findStaff) {
-      answerFindStaff(staffMarkFromSvgEvent(event));
+      selectFindStaff(staffMarkFromSvgEvent(event));
+      return;
+    }
+
+    if (event.target.closest("[data-find-submit-staff]")) {
+      submitFindStaffAnswer();
       return;
     }
 
