@@ -3079,7 +3079,7 @@ function renderFindCoursePanel() {
     ? isKeyboard
       ? "请在键盘上点出目标音。"
       : pendingStaff
-        ? `已选择 ${staffPitchText(pendingStaff)}，可以继续点别的位置调整，确认后提交。`
+        ? "已选择一个位置，可以继续点别的位置调整，确认后提交。"
         : "请在五线谱上点击目标音所在的线或间。"
     : findState.status === "correct"
       ? `回答正确，目标音是 ${isKeyboard ? displayPianoPitch(target) : staffPitchText(target)}。`
