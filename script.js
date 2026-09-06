@@ -3027,6 +3027,7 @@ function renderFindCourseIntro() {
   if (!els.findPianoExplorer || !els.findCourseTabs || !els.findCoursePanel) return;
   const course = getFindCourse();
   const isKeyboard = findState.course === "natural" || findState.course === "black";
+  const isStaffCourse = findState.course === "staff" || findState.course === "ledger";
   const group = getEarGroup(findState.groupId);
   els.findPianoExplorer.innerHTML = "";
   els.findCourseTabs.innerHTML = "";
@@ -3041,6 +3042,7 @@ function renderFindCourseIntro() {
         <span>包含音符</span>
         <p>${findState.course === "natural" ? "C　D　E　F　G　A　B" : findState.course === "black" ? "C# Db　D# Eb　F# Gb　G# Ab　A# Bb" : findState.course === "staff" ? "五线内线与间" : "上方加线与下方加线"}</p>
       </div>
+      ${isStaffCourse ? renderFindClefSwitch() : ""}
       <button class="primary-action" type="button" data-find-begin>开始练习</button>
     </section>
   `;
@@ -3080,6 +3082,7 @@ function renderFindCoursePanel() {
   const course = getFindCourse();
   const question = ensureFindQuestion();
   const isKeyboard = findState.course === "natural" || findState.course === "black";
+  const isStaffCourse = findState.course === "staff" || findState.course === "ledger";
   const selectedNote = Number.isFinite(findState.lastAnswer) && isKeyboard ? midiToPianoNote(Number(findState.lastAnswer)) : null;
   const pendingStaff = !isKeyboard && Number.isFinite(findState.pendingStaffStep)
     ? staffPositionFromStep(findState.clef, findState.pendingStaffStep)
@@ -3113,7 +3116,7 @@ function renderFindCoursePanel() {
           </div>
           ${renderFindStats()}
         </div>
-        ${isKeyboard ? "" : renderFindClefSwitch()}
+        ${isStaffCourse ? renderFindClefSwitch() : ""}
         ${isKeyboard ? renderEarKeyboardStrip({
           notes: findState.status === "idle" ? [] : [target],
           selectedMidi: selectedNote?.midi,
