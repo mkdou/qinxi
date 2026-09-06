@@ -497,7 +497,9 @@ function numberedPitchText(position) {
 }
 
 function staffPitchText(position) {
-  return `${position.name}${position.octave} · ${numberedPitchText(position)}`;
+  const note = noteOptions.find(item => item.name === position.name);
+  const solfege = note?.solfege ? ` · ${note.solfege.toLowerCase()}` : "";
+  return `${position.name}${position.octave} · ${numberedPitchText(position)}${solfege}`;
 }
 
 function staffTargetNameList(positions) {
