@@ -1972,10 +1972,26 @@ body.staff-landscape-mode .bottom-nav {
   margin-top: 12px;
 }
 
-.find-advanced-review > div {
+.find-advanced-review-head,
+.find-advanced-review-row {
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
-  gap: 4px 10px;
+  grid-template-columns: 50px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.find-advanced-review-head {
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.find-advanced-review-head span:first-child {
+  grid-column: 2;
+}
+
+.find-advanced-review-row {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 9px 10px;
@@ -1983,21 +1999,29 @@ body.staff-landscape-mode .bottom-nav {
   font-size: 13px;
 }
 
-.find-advanced-review strong {
-  grid-row: span 2;
+.find-advanced-review-index {
   color: var(--muted);
+  font-weight: 900;
 }
 
-.find-advanced-review span {
+.find-advanced-review-answer,
+.find-advanced-review-correct {
+  min-width: 0;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
-.find-advanced-review .correct span {
+.find-advanced-review-row.correct .find-advanced-review-answer,
+.find-advanced-review-row.correct .find-advanced-review-correct {
   color: #176b3e;
 }
 
-.find-advanced-review .wrong span {
+.find-advanced-review-row.wrong .find-advanced-review-answer {
   color: #a22323;
+}
+
+.find-advanced-review-row.wrong .find-advanced-review-correct {
+  color: #176b3e;
 }
 
 .today-card p:not(.eyebrow) {

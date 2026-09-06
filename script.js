@@ -3220,14 +3220,18 @@ function renderFindAdvancedReview(question) {
   if (findState.status === "idle") return "";
   return `
     <div class="find-advanced-review">
+      <div class="find-advanced-review-head">
+        <span>你的作答</span>
+        <span>正确答案</span>
+      </div>
       ${question.positions.map((position, index) => {
         const answer = midiToPianoNote(findState.sequenceAnswers[index]);
         const correct = findState.sequenceAnswers[index] === staffPositionMidi(position);
         return `
-          <div class="${correct ? "correct" : "wrong"}">
-            <strong>第 ${index + 1} 个</strong>
-            <span>你：${pianoPitchMemoryText(answer)}</span>
-            <span>对：${staffPitchText(position)}</span>
+          <div class="find-advanced-review-row ${correct ? "correct" : "wrong"}">
+            <span class="find-advanced-review-index">第 ${index + 1} 个</span>
+            <span class="find-advanced-review-answer">${pianoPitchMemoryText(answer)}</span>
+            <span class="find-advanced-review-correct">${staffPitchText(position)}</span>
           </div>
         `;
       }).join("")}
