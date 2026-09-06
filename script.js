@@ -271,7 +271,7 @@ const earStaffStages = [
 const findCourseDefinitions = [
   { id: "natural", number: "01", title: "自然音符", summary: "在钢琴键盘上找到 C、D、E、F、G、A、B。" },
   { id: "black", number: "02", title: "黑键音符", summary: "在钢琴键盘上找到升号和降号音。" },
-  { id: "staff", number: "03", title: "五线谱音符", summary: "在五线谱上找到谱内音符。" },
+  { id: "staff", number: "03", title: "五线谱音符", summary: "在五线和四个间内找到谱内音符。" },
   { id: "ledger", number: "04", title: "加线音符", summary: "在五线谱上找到上方或下方加线音。" }
 ];
 const findState = {
@@ -335,10 +335,6 @@ const pianoBlackKeys = [
 
 const staffDrillNotes = {
   treble: [
-    { name: "A", octave: 3, step: -4, ledger: "below" },
-    { name: "B", octave: 3, step: -3, ledger: "below" },
-    { name: "C", octave: 4, step: -2, ledger: "below" },
-    { name: "D", octave: 4, step: -1 },
     { name: "E", octave: 4, step: 0 },
     { name: "F", octave: 4, step: 1 },
     { name: "G", octave: 4, step: 2 },
@@ -347,17 +343,9 @@ const staffDrillNotes = {
     { name: "C", octave: 5, step: 5 },
     { name: "D", octave: 5, step: 6 },
     { name: "E", octave: 5, step: 7 },
-    { name: "F", octave: 5, step: 8 },
-    { name: "G", octave: 5, step: 9 },
-    { name: "A", octave: 5, step: 10, ledger: "above" },
-    { name: "B", octave: 5, step: 11, ledger: "above" },
-    { name: "C", octave: 6, step: 12, ledger: "above" }
+    { name: "F", octave: 5, step: 8 }
   ],
   bass: [
-    { name: "C", octave: 2, step: -4, ledger: "below" },
-    { name: "D", octave: 2, step: -3, ledger: "below" },
-    { name: "E", octave: 2, step: -2, ledger: "below" },
-    { name: "F", octave: 2, step: -1 },
     { name: "G", octave: 2, step: 0 },
     { name: "A", octave: 2, step: 1 },
     { name: "B", octave: 2, step: 2 },
@@ -366,11 +354,7 @@ const staffDrillNotes = {
     { name: "E", octave: 3, step: 5 },
     { name: "F", octave: 3, step: 6 },
     { name: "G", octave: 3, step: 7 },
-    { name: "A", octave: 3, step: 8 },
-    { name: "B", octave: 3, step: 9 },
-    { name: "C", octave: 4, step: 10, ledger: "above" },
-    { name: "D", octave: 4, step: 11, ledger: "above" },
-    { name: "E", octave: 4, step: 12, ledger: "above" }
+    { name: "A", octave: 3, step: 8 }
   ]
 };
 
@@ -3046,7 +3030,7 @@ function renderFindCourseIntro() {
         <span>练习范围</span>
         <p>${isKeyboard ? `${group.label}（${group.range}）` : "高音谱号与低音谱号"}</p>
         <span>包含音符</span>
-        <p>${findState.course === "natural" ? "C　D　E　F　G　A　B" : findState.course === "black" ? "C# Db　D# Eb　F# Gb　G# Ab　A# Bb" : findState.course === "staff" ? "谱表内部音符" : "上方加线与下方加线"}</p>
+        <p>${findState.course === "natural" ? "C　D　E　F　G　A　B" : findState.course === "black" ? "C# Db　D# Eb　F# Gb　G# Ab　A# Bb" : findState.course === "staff" ? "五线内线与间" : "上方加线与下方加线"}</p>
       </div>
       <button class="primary-action" type="button" data-find-begin>开始练习</button>
     </section>
