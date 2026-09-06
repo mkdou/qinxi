@@ -2784,11 +2784,33 @@ function findAdvancedNotePool(clef = findState.clef) {
 function createFindAdvancedQuestion() {
   const pool = findAdvancedNotePool(findState.clef);
   const sequenceLength = 4;
-  const maxStart = Math.max(0, pool.length - sequenceLength);
-  const start = Math.floor(Math.random() * (maxStart + 1));
-  const direction = Math.random() < 0.5 ? 1 : -1;
-  const slice = pool.slice(start, start + sequenceLength);
-  const positions = direction === 1 ? slice : [...slice].reverse();
+  const byStep = new Map(pool.map(note => [note.step, note]));
+  const phrasePatterns = [
+    [0, 2, 1, 3],
+    [0, 1, 3, 2],
+    [0, 2, 4, 1],
+    [0, -1, 1, -2],
+    [0, -2, -1, -3],
+    [0, 3, 1, 2],
+    [0, 1, -1, 2],
+    [0, -1, -3, -2]
+  ];
+  let positions = null;
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const base = randomItem(pool);
+    const pattern = randomItem(phrasePatterns);
+    const phrase = pattern.map(offset => byStep.get(base.step + offset)).filter(Boolean);
+    if (phrase.length === sequenceLength) {
+      positions = phrase;
+      break;
+    }
+  }
+  if (!positions) {
+    const maxStart = Math.max(0, pool.length - sequenceLength);
+    const start = Math.floor(Math.random() * (maxStart + 1));
+    const slice = pool.slice(start, start + sequenceLength);
+    positions = Math.random() < 0.5 ? slice : [...slice].reverse();
+  }
   return {
     positions,
     midis: positions.map(staffPositionMidi),
@@ -3178,24 +3200,28 @@ function renderFindAdvancedKeyboard(question) {
     answerLabels.set(midi, [...(answerLabels.get(midi) || []), index + 1]);
   });
   const disabled = findState.status !== "idle" || findState.sequenceAnswers.length >= question.requiredCount;
+  const whiteKeys = visibleKeys.filter(key => !key.isBlack).map(key => {
+    const labels = answerLabels.get(key.midi);
+    const state = labels ? "played" : "";
+    const content = labels
+      ? `<span>${labels.join(",")}</span>`
+      : key.name === "C"
+        ? `<small>${key.midi === 60 ? "中央C" : `C${key.octave}`}</small>`
+        : "";
+    return `<button class="ear-key-strip-white ${state}" style="left:${key.left - leftBase}px;width:${piano.whiteWidth}px" type="button" data-find-advanced-midi="${key.midi}" ${disabled ? "disabled" : ""} aria-label="选择 ${key.name}${key.octave}">${content}</button>`;
+  }).join("");
+  const blackKeys = visibleKeys.filter(key => key.isBlack).map(key => {
+    const labels = answerLabels.get(key.midi);
+    const state = labels ? "played" : "";
+    const content = labels ? `<span>${labels.join(",")}</span>` : "";
+    return `<button class="ear-key-strip-black ${state}" style="left:${key.left - leftBase}px;width:${piano.blackWidth}px" type="button" data-find-advanced-midi="${key.midi}" ${disabled ? "disabled" : ""} aria-label="选择 ${key.name}${key.octave}">${content}</button>`;
+  }).join("");
   return `
-    <div class="ear-key-strip find-advanced-strip" style="--strip-width:${width}px">
-      ${visibleKeys.filter(key => !key.isBlack).map(key => {
-        const labels = answerLabels.get(key.midi);
-        const state = labels ? "played" : "";
-        const content = labels
-          ? `<span>${labels.join(",")}</span>`
-          : key.name === "C"
-            ? `<small>${key.midi === 60 ? "中央C" : `C${key.octave}`}</small>`
-            : "";
-        return `<button class="ear-key-strip-white ${state}" style="left:${key.left - leftBase}px;width:${piano.whiteWidth}px" type="button" data-find-advanced-midi="${key.midi}" ${disabled ? "disabled" : ""} aria-label="选择 ${key.name}${key.octave}">${content}</button>`;
-      }).join("")}
-      ${visibleKeys.filter(key => key.isBlack).map(key => {
-        const labels = answerLabels.get(key.midi);
-        const state = labels ? "played" : "";
-        const content = labels ? `<span>${labels.join(",")}</span>` : "";
-        return `<button class="ear-key-strip-black ${state}" style="left:${key.left - leftBase}px;width:${piano.blackWidth}px" type="button" data-find-advanced-midi="${key.midi}" ${disabled ? "disabled" : ""} aria-label="选择 ${key.name}${key.octave}">${content}</button>`;
-      }).join("")}
+    <div class="ear-key-strip find-advanced-strip">
+      <div class="find-advanced-strip-inner" style="width:${width}px">
+        ${whiteKeys}
+        ${blackKeys}
+      </div>
     </div>
   `;
 }

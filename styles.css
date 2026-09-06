@@ -1906,7 +1906,9 @@ body.staff-landscape-mode .bottom-nav {
 }
 
 .find-advanced-keyboard {
+  min-width: 0;
   margin-top: 14px;
+  overflow: hidden;
   border-top: 1px solid var(--line);
   padding-top: 14px;
 }
@@ -1930,7 +1932,15 @@ body.staff-landscape-mode .bottom-nav {
 }
 
 .find-advanced-strip {
+  width: 100%;
+  max-width: 100%;
   margin-top: 10px;
+}
+
+.find-advanced-strip-inner {
+  position: relative;
+  height: 116px;
+  min-width: 100%;
 }
 
 .find-advanced-sequence {
