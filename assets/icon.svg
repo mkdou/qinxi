@@ -1,11 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="108" fill="#2e5f4d"/>
-  <rect x="88" y="78" width="46" height="356" rx="18" fill="#fffdf8"/>
-  <rect x="156" y="78" width="46" height="356" rx="18" fill="#fffdf8"/>
-  <rect x="224" y="78" width="46" height="356" rx="18" fill="#fffdf8"/>
-  <rect x="292" y="78" width="46" height="356" rx="18" fill="#fffdf8"/>
-  <rect x="360" y="78" width="46" height="356" rx="18" fill="#fffdf8"/>
-  <rect x="122" y="78" width="42" height="202" rx="14" fill="#1f2a24"/>
-  <rect x="190" y="78" width="42" height="202" rx="14" fill="#1f2a24"/>
-  <rect x="326" y="78" width="42" height="202" rx="14" fill="#1f2a24"/>
+  <defs>
+    <linearGradient id="sage" x1="72" x2="438" y1="52" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a9bdaf"/>
+      <stop offset="1" stop-color="#708f7d"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#sage)"/>
+  <circle cx="398" cy="112" r="58" fill="#dbe5dd" opacity=".42"/>
+  <rect x="88" y="78" width="46" height="356" rx="18" fill="#f9f6ef"/>
+  <rect x="156" y="78" width="46" height="356" rx="18" fill="#f9f6ef"/>
+  <rect x="224" y="78" width="46" height="356" rx="18" fill="#f9f6ef"/>
+  <rect x="292" y="78" width="46" height="356" rx="18" fill="#f9f6ef"/>
+  <rect x="360" y="78" width="46" height="356" rx="18" fill="#f9f6ef"/>
+  <rect x="122" y="78" width="42" height="202" rx="14" fill="#344b40"/>
+  <rect x="190" y="78" width="42" height="202" rx="14" fill="#344b40"/>
+  <rect x="326" y="78" width="42" height="202" rx="14" fill="#344b40"/>
 </svg>
