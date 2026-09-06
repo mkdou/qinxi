@@ -3144,12 +3144,19 @@ function renderFindAdvancedStaff(question) {
     const submitted = findState.status !== "idle";
     const isCorrect = submitted && answeredMidi === staffPositionMidi(position);
     const fill = submitted ? (isCorrect ? "#2e9b5f" : "#d93636") : "#1f2a24";
+    const labelX = Math.min(390, Math.max(68, x + (index % 2 === 0 ? -22 : 22)));
+    const labelY = submitted ? (index % 2 === 0 ? 190 : 32) : 192;
+    const labelAnchor = index % 2 === 0 ? "end" : "start";
+    const connector = submitted
+      ? `<line x1="${x}" y1="${y + (labelY > y ? 12 : -12)}" x2="${labelX}" y2="${labelY + (labelY > y ? -12 : 6)}" stroke="${fill}" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="3 3" opacity="0.72" />`
+      : "";
     const label = submitted
-      ? `<text x="${x}" y="${index % 2 ? 34 : 192}" text-anchor="middle" fill="${fill}" font-size="11" font-weight="900">${index + 1}. ${staffPitchText(position)}</text>`
-      : `<text x="${x}" y="192" text-anchor="middle" fill="#758078" font-size="12" font-weight="800">${index + 1}</text>`;
+      ? `<text x="${labelX}" y="${labelY}" text-anchor="${labelAnchor}" fill="${fill}" font-size="11" font-weight="900">${index + 1}. ${staffPitchText(position)}</text>`
+      : `<text x="${x}" y="${labelY}" text-anchor="middle" fill="#758078" font-size="12" font-weight="800">${index + 1}</text>`;
     return `
       <g>
         ${staffLedgerLinesForMark(x, position.step, bottomLineY, stepGap)}
+        ${connector}
         <ellipse cx="${x}" cy="${y}" rx="15" ry="10" fill="${fill}" transform="rotate(-18 ${x} ${y})" />
         ${label}
       </g>
