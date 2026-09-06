@@ -2767,6 +2767,15 @@ function renderFindStats() {
   return `<div class="ear-practice-stats"><span>本课统计</span><strong>${getAccuracy(stats)}</strong></div>`;
 }
 
+function renderFindClefSwitch() {
+  return `
+    <div class="clef-switch find-clef-switch" aria-label="切换谱号">
+      <button class="${findState.clef === "treble" ? "active" : ""}" type="button" data-find-clef="treble">高音谱号</button>
+      <button class="${findState.clef === "bass" ? "active" : ""}" type="button" data-find-clef="bass">低音谱号</button>
+    </div>
+  `;
+}
+
 function midiNoteLabel(midi) {
   const note = midiToPianoNote(midi);
   const middleC = midi === 60 ? " · 中央 C" : "";
@@ -3104,6 +3113,7 @@ function renderFindCoursePanel() {
           </div>
           ${renderFindStats()}
         </div>
+        ${isKeyboard ? "" : renderFindClefSwitch()}
         ${isKeyboard ? renderEarKeyboardStrip({
           notes: findState.status === "idle" ? [] : [target],
           selectedMidi: selectedNote?.midi,
@@ -3162,6 +3172,15 @@ function submitFindStaffAnswer() {
   rememberFindPractice(findState.course);
   recordQuestionAttempt(findStatsId(), isCorrect);
   upsertAppLearningRecord();
+  renderFindCoursePanel();
+}
+
+function switchFindClef(clef) {
+  if (clef !== "treble" && clef !== "bass") return;
+  if (findState.clef === clef) return;
+  findState.clef = clef;
+  resetFindQuestion();
+  rememberFindPractice(findState.course);
   renderFindCoursePanel();
 }
 
@@ -4605,6 +4624,12 @@ function setupEvents() {
       return;
     }
 
+    const findClefButton = event.target.closest("[data-find-clef]");
+    if (findClefButton) {
+      switchFindClef(findClefButton.dataset.findClef);
+      return;
+    }
+
     const findStaff = event.target.closest("[data-find-staff]");
     if (findStaff) {
       selectFindStaff(staffMarkFromSvgEvent(event));
@@ -4736,6 +4761,12 @@ function setupEvents() {
       resetFindQuestion();
       rememberFindPractice(findState.course);
       renderFindTraining();
+      return;
+    }
+
+    const findClefButton = event.target.closest("[data-find-clef]");
+    if (findClefButton) {
+      switchFindClef(findClefButton.dataset.findClef);
       return;
     }
 
