@@ -272,7 +272,8 @@ const findCourseDefinitions = [
   { id: "natural", number: "01", title: "自然音符", summary: "在钢琴键盘上找到 C、D、E、F、G、A、B。" },
   { id: "black", number: "02", title: "黑键音符", summary: "在钢琴键盘上找到升号和降号音。" },
   { id: "staff", number: "03", title: "五线谱音符", summary: "在五线和四个间内找到谱内音符。" },
-  { id: "ledger", number: "04", title: "加线音符", summary: "在五线谱上找到上方或下方加线音。" }
+  { id: "ledger", number: "04", title: "加线音符", summary: "在五线谱上找到上方或下方加线音。" },
+  { id: "advanced", number: "05", title: "进阶读谱", summary: "看一段谱面，按顺序在钢琴键盘上作答。" }
 ];
 const findState = {
   view: "entry",
@@ -283,6 +284,7 @@ const findState = {
   status: "idle",
   lastAnswer: null,
   lastAnswerX: null,
+  sequenceAnswers: [],
   pendingStaffStep: null,
   pendingStaffX: null
 };
@@ -484,6 +486,11 @@ function staffPitchText(position) {
   const note = noteOptions.find(item => item.name === position.name);
   const solfege = note?.solfege ? ` · ${note.solfege.toLowerCase()}` : "";
   return `${position.name}${position.octave} · ${numberedPitchText(position)}${solfege}`;
+}
+
+function staffPositionMidi(position) {
+  const note = noteOptions.find(item => item.name === position.name);
+  return note ? 12 * (position.octave + 1) + note.semitone : null;
 }
 
 function staffTargetNameList(positions) {
@@ -2736,7 +2743,7 @@ function getFindCourse(courseId = findState.course) {
 }
 
 function findStatsId() {
-  if (findState.course === "staff" || findState.course === "ledger") return `find-${findState.course}-${findState.clef}`;
+  if (findState.course === "staff" || findState.course === "ledger" || findState.course === "advanced") return `find-${findState.course}-${findState.clef}`;
   return `find-${findState.course}-${findState.groupId}`;
 }
 
@@ -2745,6 +2752,7 @@ function resetFindQuestion() {
   findState.status = "idle";
   findState.lastAnswer = null;
   findState.lastAnswerX = null;
+  findState.sequenceAnswers = [];
   findState.pendingStaffStep = null;
   findState.pendingStaffX = null;
 }
@@ -2752,14 +2760,40 @@ function resetFindQuestion() {
 function findTargetPool() {
   if (findState.course === "natural") return getEarGroupNotes(findState.groupId);
   if (findState.course === "black") return getEarGroupNotes(findState.groupId, true).filter(note => note.isBlack);
+  if (findState.course === "advanced") return findAdvancedNotePool(findState.clef);
   return staffNotePool(findState.course === "ledger" ? "staffLedger" : "staff", findState.clef);
 }
 
 function ensureFindQuestion() {
   if (findState.question) return findState.question;
+  if (findState.course === "advanced") {
+    findState.question = createFindAdvancedQuestion();
+    return findState.question;
+  }
   const target = randomItem(findTargetPool());
   findState.question = { target };
   return findState.question;
+}
+
+function findAdvancedNotePool(clef = findState.clef) {
+  return [...staffLedgerDrillNotes[clef], ...staffDrillNotes[clef]]
+    .filter((note, index, notes) => notes.findIndex(item => item.step === note.step) === index)
+    .sort((a, b) => a.step - b.step);
+}
+
+function createFindAdvancedQuestion() {
+  const pool = findAdvancedNotePool(findState.clef);
+  const sequenceLength = 4;
+  const maxStart = Math.max(0, pool.length - sequenceLength);
+  const start = Math.floor(Math.random() * (maxStart + 1));
+  const direction = Math.random() < 0.5 ? 1 : -1;
+  const slice = pool.slice(start, start + sequenceLength);
+  const positions = direction === 1 ? slice : [...slice].reverse();
+  return {
+    positions,
+    midis: positions.map(staffPositionMidi),
+    requiredCount: positions.length
+  };
 }
 
 function renderFindStats() {
@@ -2972,7 +3006,7 @@ function renderPracticeLanding() {
 }
 
 function renderFindCourseCards() {
-  const icons = { natural: "白", black: "#", staff: "谱", ledger: "线" };
+  const icons = { natural: "白", black: "#", staff: "谱", ledger: "线", advanced: "进" };
   return findCourseDefinitions.map(course => `
     <button class="ear-entry-course" type="button" data-find-start-course="${course.id}">
       <span>${icons[course.id]}</span>
@@ -3015,7 +3049,7 @@ function renderFindChoosePage() {
       <button class="back-button" type="button" data-find-view="entry">‹</button>
       <div class="ear-entry-section-head">
         <h4>选择练习类型</h4>
-        <p>四大分类，建议按顺序练。</p>
+        <p>五个分类，建议按顺序练。</p>
       </div>
       <div class="ear-entry-course-list">${renderFindCourseCards()}</div>
       <div class="ear-tip-card">建议按顺序练习，循环渐进效果更好。</div>
@@ -3027,7 +3061,7 @@ function renderFindCourseIntro() {
   if (!els.findPianoExplorer || !els.findCourseTabs || !els.findCoursePanel) return;
   const course = getFindCourse();
   const isKeyboard = findState.course === "natural" || findState.course === "black";
-  const isStaffCourse = findState.course === "staff" || findState.course === "ledger";
+  const isStaffCourse = findState.course === "staff" || findState.course === "ledger" || findState.course === "advanced";
   const group = getEarGroup(findState.groupId);
   els.findPianoExplorer.innerHTML = "";
   els.findCourseTabs.innerHTML = "";
@@ -3040,7 +3074,7 @@ function renderFindCourseIntro() {
         <span>练习范围</span>
         <p>${isKeyboard ? `${group.label}（${group.range}）` : "高音谱号与低音谱号"}</p>
         <span>包含音符</span>
-        <p>${findState.course === "natural" ? "C　D　E　F　G　A　B" : findState.course === "black" ? "C# Db　D# Eb　F# Gb　G# Ab　A# Bb" : findState.course === "staff" ? "五线内线与间" : "上方加线与下方加线"}</p>
+        <p>${findState.course === "natural" ? "C　D　E　F　G　A　B" : findState.course === "black" ? "C# Db　D# Eb　F# Gb　G# Ab　A# Bb" : findState.course === "staff" ? "五线内线与间" : findState.course === "ledger" ? "上方加线与下方加线" : "连续谱面与键盘顺序作答"}</p>
       </div>
       ${isStaffCourse ? renderFindClefSwitch() : ""}
       <button class="primary-action" type="button" data-find-begin>开始练习</button>
@@ -3077,8 +3111,186 @@ function renderFindStaffStage(question) {
   `;
 }
 
+function renderFindAdvancedStaff(question) {
+  const bottomLineY = 154;
+  const stepGap = 10;
+  const lines = [0, 2, 4, 6, 8].map(step => `<line x1="30" y1="${staffMarkY(step, bottomLineY, stepGap)}" x2="420" y2="${staffMarkY(step, bottomLineY, stepGap)}" stroke="#333" stroke-width="1.7" />`).join("");
+  const notes = question.positions.map((position, index) => {
+    const x = 132 + index * 62;
+    const y = staffMarkY(position.step, bottomLineY, stepGap);
+    const answeredMidi = findState.sequenceAnswers[index];
+    const submitted = findState.status !== "idle";
+    const isCorrect = submitted && answeredMidi === staffPositionMidi(position);
+    const fill = submitted ? (isCorrect ? "#2e9b5f" : "#d93636") : "#1f2a24";
+    const label = submitted
+      ? `<text x="${x}" y="${index % 2 ? 34 : 192}" text-anchor="middle" fill="${fill}" font-size="11" font-weight="900">${index + 1}. ${staffPitchText(position)}</text>`
+      : `<text x="${x}" y="192" text-anchor="middle" fill="#758078" font-size="12" font-weight="800">${index + 1}</text>`;
+    return `
+      <g>
+        ${staffLedgerLinesForMark(x, position.step, bottomLineY, stepGap)}
+        <ellipse cx="${x}" cy="${y}" rx="15" ry="10" fill="${fill}" transform="rotate(-18 ${x} ${y})" />
+        ${label}
+      </g>
+    `;
+  }).join("");
+  return `
+    <div class="ear-staff-stage find-advanced-staff">
+      <svg viewBox="0 0 450 210" role="img" aria-label="进阶读谱题目">
+        ${lines}
+        ${staffClefMarkup(findState.clef, 60, findState.clef === "treble" ? 140 : 98, 27)}
+        <line x1="402" y1="${staffMarkY(8, bottomLineY, stepGap)}" x2="402" y2="${staffMarkY(0, bottomLineY, stepGap)}" stroke="#333" stroke-width="1.8" />
+        ${notes}
+      </svg>
+    </div>
+  `;
+}
+
+function findAdvancedKeyboardBounds(question) {
+  const midis = question.midis.filter(Number.isFinite);
+  const minMidi = Math.min(...midis);
+  const maxMidi = Math.max(...midis);
+  const minOctave = Math.max(0, Math.floor(minMidi / 12) - 1);
+  const maxOctave = Math.min(8, Math.floor(maxMidi / 12) - 1);
+  return {
+    minMidi: Math.max(21, 12 * (minOctave + 1)),
+    maxMidi: Math.min(108, 12 * (maxOctave + 1) + 11)
+  };
+}
+
+function findAdvancedRangeLabel(question) {
+  const midis = question.midis.filter(Number.isFinite);
+  const groups = earOctaveGroups.filter(group => Math.max(...midis) >= group.minMidi && Math.min(...midis) <= group.maxMidi);
+  if (!groups.length) return "对应钢琴组";
+  if (groups.length === 1) return `${groups[0].label} · ${groups[0].range}`;
+  return `${groups[0].label}-${groups[groups.length - 1].label}`;
+}
+
+function renderFindAdvancedKeyboard(question) {
+  const piano = buildPiano88Keys();
+  const bounds = findAdvancedKeyboardBounds(question);
+  const visibleKeys = piano.keys.filter(key => key.midi >= bounds.minMidi && key.midi <= bounds.maxMidi);
+  const firstWhite = visibleKeys.find(key => !key.isBlack);
+  const lastWhite = [...visibleKeys].reverse().find(key => !key.isBlack);
+  const leftBase = Math.max(0, firstWhite?.left ?? visibleKeys[0]?.left ?? 0);
+  const width = Math.max(120, ((lastWhite?.left ?? leftBase) - leftBase) + piano.whiteWidth);
+  const answerLabels = new Map();
+  findState.sequenceAnswers.forEach((midi, index) => {
+    answerLabels.set(midi, [...(answerLabels.get(midi) || []), index + 1]);
+  });
+  const disabled = findState.status !== "idle" || findState.sequenceAnswers.length >= question.requiredCount;
+  return `
+    <div class="ear-key-strip find-advanced-strip" style="--strip-width:${width}px">
+      ${visibleKeys.filter(key => !key.isBlack).map(key => {
+        const labels = answerLabels.get(key.midi);
+        const state = labels ? "played" : "";
+        const content = labels
+          ? `<span>${labels.join(",")}</span>`
+          : key.name === "C"
+            ? `<small>${key.midi === 60 ? "中央C" : `C${key.octave}`}</small>`
+            : "";
+        return `<button class="ear-key-strip-white ${state}" style="left:${key.left - leftBase}px;width:${piano.whiteWidth}px" type="button" data-find-advanced-midi="${key.midi}" ${disabled ? "disabled" : ""} aria-label="选择 ${key.name}${key.octave}">${content}</button>`;
+      }).join("")}
+      ${visibleKeys.filter(key => key.isBlack).map(key => {
+        const labels = answerLabels.get(key.midi);
+        const state = labels ? "played" : "";
+        const content = labels ? `<span>${labels.join(",")}</span>` : "";
+        return `<button class="ear-key-strip-black ${state}" style="left:${key.left - leftBase}px;width:${piano.blackWidth}px" type="button" data-find-advanced-midi="${key.midi}" ${disabled ? "disabled" : ""} aria-label="选择 ${key.name}${key.octave}">${content}</button>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderFindAdvancedAnswerSequence(question) {
+  const submitted = findState.status !== "idle";
+  return `
+    <div class="find-advanced-sequence" aria-label="作答序列">
+      ${question.positions.map((position, index) => {
+        const midi = findState.sequenceAnswers[index];
+        const note = Number.isFinite(midi) ? midiToPianoNote(midi) : null;
+        const correct = submitted && midi === staffPositionMidi(position);
+        const wrong = submitted && Number.isFinite(midi) && !correct;
+        const label = note ? pianoPitchMemoryText(note) : `${index + 1}`;
+        return `<span class="${correct ? "correct" : wrong ? "wrong" : ""}">${label}</span>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderFindAdvancedReview(question) {
+  if (findState.status === "idle") return "";
+  return `
+    <div class="find-advanced-review">
+      ${question.positions.map((position, index) => {
+        const answer = midiToPianoNote(findState.sequenceAnswers[index]);
+        const correct = findState.sequenceAnswers[index] === staffPositionMidi(position);
+        return `
+          <div class="${correct ? "correct" : "wrong"}">
+            <strong>第 ${index + 1} 个</strong>
+            <span>你：${pianoPitchMemoryText(answer)}</span>
+            <span>对：${staffPitchText(position)}</span>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderFindAdvancedCoursePanel() {
+  if (!els.findCoursePanel || !els.findPianoExplorer || !els.findCourseTabs) return;
+  const course = getFindCourse();
+  const question = ensureFindQuestion();
+  const isComplete = findState.sequenceAnswers.length >= question.requiredCount;
+  const wrongIndexes = findState.status === "wrong"
+    ? question.positions
+      .map((position, index) => (findState.sequenceAnswers[index] === staffPositionMidi(position) ? null : index + 1))
+      .filter(Boolean)
+    : [];
+  const feedback = findState.status === "idle"
+    ? `按谱面顺序点击琴键，当前 ${findState.sequenceAnswers.length}/${question.requiredCount}。`
+    : findState.status === "correct"
+      ? `回答正确：${question.positions.map(staffPitchText).join("、")}。`
+      : `回答错误。错在第 ${wrongIndexes.join("、")} 个音。你作答的是 ${findState.sequenceAnswers.map(midi => displayPianoPitch(midiToPianoNote(midi))).join("、")}；正确应为 ${question.positions.map(staffPitchText).join("、")}。`;
+  els.findPianoExplorer.innerHTML = "";
+  els.findCourseTabs.innerHTML = "";
+  els.findCoursePanel.innerHTML = `
+    <section class="ear-practice-shell">
+      <div class="ear-practice-nav">
+        <button class="back-button" type="button" data-find-view="choose">‹</button>
+        <div>
+          <span>找音训练</span>
+          <strong>${course.title}</strong>
+        </div>
+      </div>
+      <section class="ear-practice-tool">
+        <div class="ear-question-head">
+          <div>
+            <span>${course.number}</span>
+            <h4>请依次按出这一小节</h4>
+            <p>${findState.clef === "treble" ? "高音谱号" : "低音谱号"} · ${findAdvancedRangeLabel(question)}</p>
+          </div>
+          ${renderFindStats()}
+        </div>
+        ${renderFindClefSwitch()}
+        ${renderFindAdvancedStaff(question)}
+        <div class="find-advanced-keyboard">
+          <div><strong>作答区</strong><span>${findAdvancedRangeLabel(question)}</span></div>
+          ${renderFindAdvancedKeyboard(question)}
+        </div>
+        ${renderFindAdvancedAnswerSequence(question)}
+        <div class="find-advanced-actions">
+          <button class="ghost-action" type="button" data-find-advanced-undo ${findState.status !== "idle" || !findState.sequenceAnswers.length ? "disabled" : ""}>清除上一个</button>
+          ${findState.status === "idle" ? `<button class="primary-action" type="button" data-find-advanced-submit ${isComplete ? "" : "disabled"}>提交答案</button>` : `<button class="primary-action" type="button" data-find-next>下一题</button>`}
+        </div>
+        <p class="ear-feedback ${findState.status}">${feedback}</p>
+        ${renderFindAdvancedReview(question)}
+      </section>
+    </section>
+  `;
+}
+
 function renderFindCoursePanel() {
   if (!els.findCoursePanel || !els.findPianoExplorer || !els.findCourseTabs) return;
+  if (findState.course === "advanced") return renderFindAdvancedCoursePanel();
   const course = getFindCourse();
   const question = ensureFindQuestion();
   const isKeyboard = findState.course === "natural" || findState.course === "black";
@@ -3184,6 +3396,37 @@ function switchFindClef(clef) {
   findState.clef = clef;
   resetFindQuestion();
   rememberFindPractice(findState.course);
+  renderFindCoursePanel();
+}
+
+function answerFindAdvancedKey(midi) {
+  if (findState.course !== "advanced" || findState.status !== "idle" || !Number.isFinite(midi)) return;
+  const question = ensureFindQuestion();
+  if (findState.sequenceAnswers.length >= question.requiredCount) return;
+  findState.sequenceAnswers.push(midi);
+  const note = midiToPianoNote(midi);
+  playPianoTone(note.frequency).catch(error => {
+    updateEarAudioStatus("音频加载失败，请再点一次");
+    console.error("进阶读谱按键播放失败", error);
+  });
+  renderFindCoursePanel();
+}
+
+function undoFindAdvancedAnswer() {
+  if (findState.course !== "advanced" || findState.status !== "idle" || !findState.sequenceAnswers.length) return;
+  findState.sequenceAnswers.pop();
+  renderFindCoursePanel();
+}
+
+function submitFindAdvancedAnswer() {
+  if (findState.course !== "advanced" || findState.status !== "idle") return;
+  const question = ensureFindQuestion();
+  if (findState.sequenceAnswers.length < question.requiredCount) return;
+  const isCorrect = question.midis.every((midi, index) => midi === findState.sequenceAnswers[index]);
+  findState.status = isCorrect ? "correct" : "wrong";
+  rememberFindPractice(findState.course);
+  recordQuestionAttempt(findStatsId(), isCorrect);
+  upsertAppLearningRecord();
   renderFindCoursePanel();
 }
 
@@ -4644,6 +4887,22 @@ function setupEvents() {
       return;
     }
 
+    const advancedKey = event.target.closest("[data-find-advanced-midi]");
+    if (advancedKey) {
+      answerFindAdvancedKey(Number(advancedKey.dataset.findAdvancedMidi));
+      return;
+    }
+
+    if (event.target.closest("[data-find-advanced-undo]")) {
+      undoFindAdvancedAnswer();
+      return;
+    }
+
+    if (event.target.closest("[data-find-advanced-submit]")) {
+      submitFindAdvancedAnswer();
+      return;
+    }
+
     const findNextButton = event.target.closest("[data-find-next]");
     if (findNextButton) {
       nextFindQuestion();
@@ -4781,6 +5040,22 @@ function setupEvents() {
 
     if (event.target.closest("[data-find-submit-staff]")) {
       submitFindStaffAnswer();
+      return;
+    }
+
+    const advancedKey = event.target.closest("[data-find-advanced-midi]");
+    if (advancedKey) {
+      answerFindAdvancedKey(Number(advancedKey.dataset.findAdvancedMidi));
+      return;
+    }
+
+    if (event.target.closest("[data-find-advanced-undo]")) {
+      undoFindAdvancedAnswer();
+      return;
+    }
+
+    if (event.target.closest("[data-find-advanced-submit]")) {
+      submitFindAdvancedAnswer();
       return;
     }
 

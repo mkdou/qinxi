@@ -1890,6 +1890,116 @@ body.staff-landscape-mode .bottom-nav {
   min-width: 160px;
 }
 
+.find-advanced-staff {
+  margin-top: 14px;
+}
+
+.find-advanced-keyboard {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.find-advanced-keyboard > div:first-child {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.find-advanced-keyboard strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.find-advanced-keyboard span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.find-advanced-strip {
+  margin-top: 10px;
+}
+
+.find-advanced-sequence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.find-advanced-sequence span {
+  min-width: 50px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.find-advanced-sequence span.correct {
+  border-color: #9ccbb4;
+  background: #d9f1e6;
+  color: #176b3e;
+}
+
+.find-advanced-sequence span.wrong {
+  border-color: #e2a0a0;
+  background: #ffe1e1;
+  color: #a22323;
+}
+
+.find-advanced-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.find-advanced-actions .primary-action,
+.find-advanced-actions .ghost-action {
+  min-width: 128px;
+}
+
+.find-advanced-review {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.find-advanced-review > div {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.find-advanced-review strong {
+  grid-row: span 2;
+  color: var(--muted);
+}
+
+.find-advanced-review span {
+  font-weight: 800;
+}
+
+.find-advanced-review .correct span {
+  color: #176b3e;
+}
+
+.find-advanced-review .wrong span {
+  color: #a22323;
+}
+
 .today-card p:not(.eyebrow) {
   color: var(--muted);
   line-height: 1.7;
