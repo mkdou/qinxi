@@ -2589,6 +2589,15 @@ function displayPianoPitch(note) {
   return `${note.name.replace("#", "♯")}${note.octave}`;
 }
 
+function pianoPitchMemoryText(note) {
+  if (!note) return "未知音";
+  const base = displayPianoPitch(note);
+  if (note.isBlack) return base;
+  const natural = noteOptions.find(item => item.name === note.name);
+  if (!natural) return base;
+  return `${base} · ${natural.numbered} · ${natural.solfege.toLowerCase()}`;
+}
+
 function renderEarSequenceReveal(question) {
   if (earState.status === "idle") return "";
   const directionLabel = question.direction === "highest" ? "最高音" : "最低音";
@@ -3082,8 +3091,8 @@ function renderFindCoursePanel() {
         ? "已选择一个位置，可以继续点别的位置调整，确认后提交。"
         : "请在五线谱上点击目标音所在的线或间。"
     : findState.status === "correct"
-      ? `回答正确，目标音是 ${isKeyboard ? displayPianoPitch(target) : staffPitchText(target)}。`
-      : `回答错误。你选的是 ${isKeyboard ? displayPianoPitch(selectedNote) : staffPitchText(staffPositionFromStep(findState.clef, Number(findState.lastAnswer)))}，正确答案是 ${isKeyboard ? displayPianoPitch(target) : staffPitchText(target)}。`;
+      ? `回答正确，目标音是 ${isKeyboard ? pianoPitchMemoryText(target) : staffPitchText(target)}。`
+      : `回答错误。你选的是 ${isKeyboard ? pianoPitchMemoryText(selectedNote) : staffPitchText(staffPositionFromStep(findState.clef, Number(findState.lastAnswer)))}，正确答案是 ${isKeyboard ? pianoPitchMemoryText(target) : staffPitchText(target)}。`;
   els.findPianoExplorer.innerHTML = "";
   els.findCourseTabs.innerHTML = "";
   els.findCoursePanel.innerHTML = `
