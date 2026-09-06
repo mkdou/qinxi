@@ -6,7 +6,7 @@
   "scope": "./",
   "display": "standalone",
   "background_color": "#f7f3ea",
-  "theme_color": "#829d8d",
+  "theme_color": "#c4d488",
   "orientation": "any",
   "categories": ["education", "music", "productivity"],
   "icons": [
