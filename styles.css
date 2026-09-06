@@ -1882,7 +1882,7 @@ body.staff-landscape-mode .bottom-nav {
 
 .find-submit-row {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   margin-top: 14px;
 }
 

@@ -282,7 +282,9 @@ const findState = {
   question: null,
   status: "idle",
   lastAnswer: null,
-  pendingStaffStep: null
+  lastAnswerX: null,
+  pendingStaffStep: null,
+  pendingStaffX: null
 };
 let earPlaybackTimers = [];
 let pianoWarmGroupId = null;
@@ -2756,7 +2758,9 @@ function resetFindQuestion() {
   findState.question = null;
   findState.status = "idle";
   findState.lastAnswer = null;
+  findState.lastAnswerX = null;
   findState.pendingStaffStep = null;
+  findState.pendingStaffX = null;
 }
 
 function findTargetPool() {
@@ -3053,12 +3057,14 @@ function renderFindStaffStage(question) {
   const lines = [0, 2, 4, 6, 8].map(step => `<line x1="38" y1="${staffMarkY(step, bottomLineY, stepGap)}" x2="412" y2="${staffMarkY(step, bottomLineY, stepGap)}" stroke="#333" stroke-width="1.7" />`).join("");
   const target = question.target;
   const displayStep = findState.status === "idle" ? findState.pendingStaffStep : findState.lastAnswer;
+  const displayX = findState.status === "idle" ? findState.pendingStaffX : findState.lastAnswerX;
+  const answerX = Number.isFinite(displayX) ? displayX : 292;
   const answer = Number.isFinite(displayStep) ? staffPositionFromStep(findState.clef, displayStep) : null;
   const answerMarkup = answer ? (() => {
     const y = staffMarkY(answer.step, bottomLineY, stepGap);
     const correct = findState.status !== "idle" && answer.step === target.step;
     const fill = findState.status === "idle" ? "#c88a2a" : correct ? "#2e9b5f" : "#d93636";
-    return `${staffLedgerLinesForMark(292, answer.step, bottomLineY, stepGap)}<ellipse cx="292" cy="${y}" rx="16" ry="11" fill="${fill}" transform="rotate(-18 292 ${y})" />`;
+    return `${staffLedgerLinesForMark(answerX, answer.step, bottomLineY, stepGap)}<ellipse cx="${answerX}" cy="${y}" rx="16" ry="11" fill="${fill}" transform="rotate(-18 ${answerX} ${y})" />`;
   })() : "";
   const correctionMarkup = findState.status === "wrong"
     ? `${staffLedgerLinesForMark(348, target.step, bottomLineY, stepGap)}<ellipse cx="348" cy="${staffMarkY(target.step, bottomLineY, stepGap)}" rx="16" ry="11" fill="#2e9b5f" transform="rotate(-18 348 ${staffMarkY(target.step, bottomLineY, stepGap)})" />`
@@ -3150,6 +3156,11 @@ function answerFindKeyboard(midi) {
 function selectFindStaff(mark) {
   if (findState.status !== "idle" || !mark) return;
   findState.pendingStaffStep = mark.step;
+  findState.pendingStaffX = mark.x;
+  playPianoTone(noteFrequency(staffPositionFromStep(findState.clef, mark.step))).catch(error => {
+    updateEarAudioStatus("音频加载失败，请再点一次");
+    console.error("找音落点播放失败", error);
+  });
   renderFindCoursePanel();
 }
 
@@ -3158,7 +3169,9 @@ function submitFindStaffAnswer() {
   const question = ensureFindQuestion();
   const isCorrect = findState.pendingStaffStep === question.target.step;
   findState.lastAnswer = findState.pendingStaffStep;
+  findState.lastAnswerX = findState.pendingStaffX;
   findState.pendingStaffStep = null;
+  findState.pendingStaffX = null;
   findState.status = isCorrect ? "correct" : "wrong";
   rememberFindPractice(findState.course);
   recordQuestionAttempt(findStatsId(), isCorrect);
